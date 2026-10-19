@@ -1,24 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-  <defs>
-    <radialGradient id="ground" cx="50%" cy="28%" r="85%">
-      <stop offset="0" stop-color="#30281E"/>
-      <stop offset="1" stop-color="#14110D"/>
-    </radialGradient>
-    <clipPath id="bib"><rect x="-270" y="-310" width="540" height="620" rx="34"/></clipPath>
-  </defs>
-  <rect width="1024" height="1024" fill="url(#ground)"/>
-  <g transform="translate(512 528) rotate(-6)">
-    <rect x="-258" y="-292" width="540" height="620" rx="34" fill="#000000" opacity="0.38"/>
-    <g clip-path="url(#bib)">
-      <rect x="-270" y="-310" width="540" height="620" fill="#EEE5D1"/>
-      <rect x="-270" y="-310" width="540" height="118" fill="#8E4A2C"/>
-      <rect x="-110" y="-259" width="220" height="16" rx="8" fill="#F6EEDD" opacity="0.7"/>
-      <rect x="-150" y="262" width="300" height="12" rx="6" fill="#A9B872"/>
-    </g>
-    <circle cx="-226" cy="-266" r="17" fill="#16130F"/>
-    <circle cx="226" cy="-266" r="17" fill="#16130F"/>
-    <circle cx="-226" cy="266" r="17" fill="#16130F"/>
-    <circle cx="226" cy="266" r="17" fill="#16130F"/>
-    <path d="M -8 -140 L 92 -140 L 92 225 L -8 225 L -8 -70 L -93 -20 L -93 -90 Z" fill="#1E1912"/>
-  </g>
+  <rect width="1024" height="1024" fill="#16130F"/>
+  <rect x="152" y="262" width="720" height="500" rx="250" fill="#9C4F33"/>
+  <rect x="197" y="307" width="630" height="410" rx="205" fill="none" stroke="#EEE5D1" stroke-opacity="0.5" stroke-width="8"/>
+  <rect x="242" y="352" width="540" height="320" rx="160" fill="none" stroke="#EEE5D1" stroke-opacity="0.5" stroke-width="8"/>
+  <rect x="287" y="397" width="450" height="230" rx="115" fill="#5E6B3A"/>
+  <rect x="596" y="630" width="14" height="128" fill="#EEE5D1"/>
+  <circle cx="420" cy="330" r="26" fill="#D9A441"/>
 </svg>
