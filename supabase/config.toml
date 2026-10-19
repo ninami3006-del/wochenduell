@@ -1,0 +1,13 @@
+# Only the settings declared here are pushed to the hosted project (supabase config push).
+project_id = "wochenduell"
+
+[auth]
+site_url = "https://ninami3006-del.github.io/wochenduell/"
+additional_redirect_urls = ["https://ninami3006-del.github.io/wochenduell/", "http://localhost:8765/"]
+enable_signup = true
+minimum_password_length = 8
+
+[auth.email]
+enable_signup = true
+# The free built-in mail service only delivers to the project team, so sign-ups go straight in.
+enable_confirmations = false

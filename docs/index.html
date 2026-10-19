@@ -15,252 +15,33 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Figtree:wght@400;500;600;700&display=swap">
-<style>
-/* Layout: one phone-width app column — sticky header, four tabs plus a raised "+" in the bottom bar; the weekly leader is printed as a race bib.
-   Palette: one deliberate dark look in earth tones (umber ground, moss, ochre, clay, patina), the same for every viewer. */
-:root{
-  --bg:#16130F; --surface:#211C16; --surface-2:#2C251E; --ink:#EDE4D3; --muted:#A6977F; --line:#3B3229;
-  --accent:#A9B872; --accent-ink:#191A0F; --accent-soft:#2F3322;
-  --signal:#E2B35A; --signal-soft:#382D19;
-  --c-steps:#A9B872; --c-burn:#D9A441; --c-train:#CB6E4B; --c-food:#7FAFA2;
-  --good:#A9B872; --good-soft:#2C3120; --warn:#E0A458; --warn-soft:#3A2B18;
-  --bib-paper:#EEE5D1; --bib-ink:#1E1912; --bib-muted:#5F5444; --bib-strip:#8E4A2C; --bib-strip-ink:#F6EEDD;
-  --scrim:rgba(8,6,4,.65);
-  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px rgba(0,0,0,.32);
-  --f-display:"Big Shoulders Display","Arial Narrow","Helvetica Neue Condensed",Impact,sans-serif;
-  --f-body:"Figtree",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-  --r:16px;
-  color-scheme:dark;
-}
-
-*{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
-button,input,select{font:inherit;color:inherit}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
-[hidden]{display:none!important}
-h1,h2,h3,p{margin:0}
-
-.ico{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
-
-/* ---------- shell ---------- */
-.app{max-width:460px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 calc(104px + env(safe-area-inset-bottom,0px))}
-.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;align-items:center;justify-content:space-between;gap:12px;
-  margin-left:calc(-1 * max(16px,env(safe-area-inset-left,0px)));margin-right:calc(-1 * max(16px,env(safe-area-inset-right,0px)));
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 10px;background:var(--bg)}
-.brand{font-family:var(--f-display);font-weight:900;font-size:24px;letter-spacing:.05em;text-transform:uppercase;line-height:1}
-.brand span{color:var(--accent)}
-.proto-pill{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border:1px dashed var(--muted);border-radius:999px;padding:4px 10px;white-space:nowrap}
-
-.view{display:flex;flex-direction:column;gap:18px;padding-top:10px;animation:rise .28s ease-out}
-@keyframes rise{from{transform:translateY(6px);opacity:.5}to{transform:none;opacity:1}}
-
-.eyebrow{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.display{font-family:var(--f-display);font-weight:800;font-size:58px;line-height:.92;margin:6px 0 8px;text-wrap:balance}
-.lede{color:var(--muted);font-size:15.5px;max-width:34ch}
-.lede strong{color:var(--ink)}
-.muted{color:var(--muted)}
-.hint{font-size:13px;color:var(--muted)}
-
-.card{background:var(--surface);border-radius:var(--r);padding:18px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:14px;min-width:0}
-.card-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
-.card-title{font-size:12.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase}
-.link-btn{background:none;border:0;padding:0;color:var(--accent);font-weight:600;font-size:14px;cursor:pointer}
-
-.btn{appearance:none;border:0;border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer;background:var(--accent);color:var(--accent-ink);text-align:center}
-.btn.ghost{background:var(--surface-2);color:var(--ink)}
-.btn:active{transform:translateY(1px)}
-
-/* category colours */
-.cat-steps{--c:var(--c-steps)} .cat-burn{--c:var(--c-burn)} .cat-train{--c:var(--c-train)} .cat-food{--c:var(--c-food)}
-.dot{width:10px;height:10px;border-radius:3px;background:var(--c);flex:none;display:inline-block}
-
-/* ---------- Heute ---------- */
-.today-total{display:flex;align-items:flex-end;gap:10px}
-.bignum{font-family:var(--f-display);font-weight:800;font-size:72px;line-height:.82;font-variant-numeric:tabular-nums}
-.bignum-label{font-weight:600;color:var(--muted);padding-bottom:4px;line-height:1.2}
-.metrics{display:flex;flex-direction:column}
-.metric{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 12px;padding-block:12px;border-top:1px solid var(--line)}
-.metric:first-child{border-top:0;padding-top:2px}
-.metric-label{display:flex;align-items:center;gap:8px;font-weight:700}
-.metric-val{font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
-.metric-sub{font-size:12.5px;color:var(--muted);min-width:0}
-.metric-pts{font-size:12.5px;font-weight:700;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-.bar{grid-column:1/-1;height:6px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin-top:6px}
-.bar>i{display:block;height:100%;background:var(--c);border-radius:inherit}
-
-.chips{display:flex;flex-wrap:wrap;gap:8px}
-.chip{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:6px 11px;border-radius:999px;background:var(--surface-2)}
-
-.alert{display:flex;gap:12px;align-items:flex-start;background:var(--warn-soft);color:var(--ink);border-radius:var(--r);padding:14px 16px}
-.alert .ico{color:var(--warn)}
-.alert p{font-size:14px}
-.alert .link-btn{margin-top:4px}
-
-.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
-.wk-col{display:flex;flex-direction:column;align-items:stretch;gap:6px;min-width:0}
-.wk-plot{height:120px;margin-top:18px;display:flex;align-items:flex-end;gap:3px}
-.wk-bar{position:relative;border-radius:5px 5px 2px 2px;min-height:3px}
-.wk-bar.me{flex:2;background:var(--accent)}
-.wk-bar.rv{flex:1;background:var(--muted);opacity:.38}
-.wk-bar.future{flex:1;height:100%;background:none;border:1.5px dashed var(--line);border-radius:6px}
-.wk-val{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);padding-bottom:3px;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink)}
-.wk-day{font-size:12px;font-weight:600;color:var(--muted);text-align:center}
-.wk-col.today .wk-day{color:var(--ink)}
-.wk-col.today .wk-day::after{content:"";display:block;width:4px;height:4px;border-radius:50%;background:var(--accent);margin:3px auto 0}
-.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--muted)}
-.legend span{display:inline-flex;align-items:center;gap:6px}
-.sw{width:12px;height:12px;border-radius:3px;display:inline-block}
-.sw.me{background:var(--accent)} .sw.rv{background:var(--muted);opacity:.38}
-
-/* ---------- Rangliste ---------- */
-.head-row{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.bib-stage{padding:6px 22px 4px}
-.bib{position:relative;background:var(--bib-paper);color:var(--bib-ink);border-radius:8px;box-shadow:var(--shadow);overflow:hidden;text-align:center;transform:rotate(-1.4deg)}
-.bib-strip{background:var(--bib-strip);color:var(--bib-strip-ink);font-family:var(--f-display);font-weight:800;letter-spacing:.16em;font-size:14px;padding:9px 36px;text-transform:uppercase}
-.bib-num{font-family:var(--f-display);font-weight:900;font-size:132px;line-height:.8;padding-top:18px;letter-spacing:-.01em}
-.bib-name{font-weight:700;font-size:22px;margin-top:8px}
-.bib-meta{font-size:13.5px;color:var(--bib-muted);padding:2px 16px 22px;font-variant-numeric:tabular-nums}
-.hole{position:absolute;width:11px;height:11px;border-radius:50%;background:var(--bg);box-shadow:inset 0 1px 2px rgba(0,0,0,.28)}
-.hole.tl{top:11px;left:12px} .hole.tr{top:11px;right:12px} .hole.bl{bottom:11px;left:12px} .hole.br{bottom:11px;right:12px}
-
-.lb{display:flex;flex-direction:column}
-.lb-item{border-top:1px solid var(--line)}
-.lb-item:first-child{border-top:0}
-.lb-row{display:grid;grid-template-columns:24px 38px minmax(0,1fr) auto;align-items:center;gap:10px;padding:11px 0;width:100%;background:none;border:0;text-align:left;cursor:pointer}
-.lb-rank{font-family:var(--f-display);font-weight:800;font-size:22px;text-align:center;font-variant-numeric:tabular-nums}
-.avatar{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);font-weight:700;font-size:13px;letter-spacing:.02em;flex:none}
-.avatar.me{background:var(--accent);color:var(--accent-ink)}
-.lb-main{min-width:0;display:flex;flex-direction:column;gap:6px}
-.lb-name{font-weight:600;display:flex;align-items:center;gap:8px}
-.is-me .lb-name{color:var(--accent)}
-.crown{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--signal-soft);color:var(--ink);border-radius:999px;padding:2px 7px}
-.stack{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--surface-2)}
-.stack>i{display:block;height:100%;background:var(--c)}
-.lb-total{font-family:var(--f-display);font-weight:800;font-size:28px;line-height:1;text-align:right;font-variant-numeric:tabular-nums}
-.lb-total small{font-family:var(--f-body);font-size:11px;font-weight:600;color:var(--muted);margin-left:3px}
-.lb-detail{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px;padding:0 0 14px 72px;font-size:13.5px}
-.lb-detail div{display:flex;align-items:center;gap:8px}
-.lb-detail b{margin-left:auto;font-variant-numeric:tabular-nums}
-.past{display:flex;flex-direction:column}
-.past-row{display:grid;grid-template-columns:56px 38px minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
-.past-row:first-child{border-top:0;padding-top:0}
-.past-kw{font-family:var(--f-display);font-weight:800;font-size:18px;color:var(--muted)}
-.past-pts{font-weight:700;font-variant-numeric:tabular-nums}
-.invite{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.code{font-family:var(--f-display);font-weight:800;font-size:30px;letter-spacing:.08em}
-
-/* ---------- Feed ---------- */
-.day-head{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding-top:6px}
-.posts{display:flex;flex-direction:column;gap:10px}
-.post{display:grid;grid-template-columns:38px minmax(0,1fr);gap:12px;background:var(--surface);padding:14px;border-radius:var(--r);box-shadow:var(--shadow)}
-.post.winner{background:var(--signal-soft);box-shadow:none;border:1.5px solid var(--signal)}
-.post-top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
-.post-who{font-weight:700}
-.post-time{font-size:12px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
-.post-title{margin:2px 0 10px}
-.post-foot{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
-.src{font-size:11.5px;font-weight:600;padding:3px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted)}
-.winner .src{background:var(--surface)}
-.pts{font-size:12px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
-.kudos{margin-left:auto;display:inline-flex;gap:6px;align-items:center;border:1px solid var(--line);background:none;border-radius:999px;padding:4px 11px 4px 8px;font-size:13px;font-weight:600;cursor:pointer;font-variant-numeric:tabular-nums}
-.kudos .ico{width:16px;height:16px}
-.kudos[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-
-/* ---------- Verbindungen ---------- */
-.conn-head{display:flex;align-items:center;gap:12px}
-.conn-icon{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:var(--surface-2);flex:none}
-.conn-name{display:flex;flex-direction:column;min-width:0;flex:1}
-.conn-name b{font-size:16px}
-.conn-name span{font-size:13px}
-.status{font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap}
-.status.on{background:var(--good-soft);color:var(--good)}
-.status.off{background:var(--surface-2);color:var(--muted)}
-.tags{display:flex;flex-wrap:wrap;gap:6px}
-.tag{font-size:12.5px;font-weight:600;padding:4px 10px;border-radius:999px;border:1px solid var(--line)}
-.field{display:flex;flex-direction:column;gap:8px;border:0;padding:0;margin:0;min-width:0}
-.field label,.field legend{font-weight:700;font-size:14px;padding:0}
-.input{width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:11px 12px}
-.goal-row{display:flex;align-items:center;gap:10px}
-.goal-row .input{max-width:140px;font-variant-numeric:tabular-nums;font-weight:600}
-.flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;font-weight:600}
-.flow span.step{padding:5px 10px;border-radius:8px;background:var(--surface-2)}
-.flow .arrow{color:var(--muted)}
-
-/* ---------- tab bar ---------- */
-.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--surface);border-top:1px solid var(--line);
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-bottom:env(safe-area-inset-bottom,0px)}
-.tabbar-inner{max-width:428px;margin:0 auto;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));height:64px;align-items:center}
-.tab{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:600;color:var(--muted);padding:6px 0;cursor:pointer}
-.tab[aria-current="page"]{color:var(--accent)}
-.plus{justify-self:center;width:56px;height:56px;border-radius:18px;background:var(--accent);color:var(--accent-ink);border:0;display:grid;place-items:center;transform:translateY(-16px);box-shadow:0 8px 20px rgba(0,0,0,.45);cursor:pointer}
-.plus .ico{width:26px;height:26px;stroke-width:2.4}
-
-/* ---------- sheets ---------- */
-.backdrop{position:fixed;inset:0;z-index:20;background:var(--scrim);display:flex;align-items:flex-end;justify-content:center}
-.sheet{width:100%;max-width:460px;background:var(--surface);border-radius:22px 22px 0 0;max-height:90%;overflow:auto;display:flex;flex-direction:column;gap:16px;
-  padding-top:10px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));animation:up .22s ease-out}
-@keyframes up{from{transform:translateY(24px)}to{transform:none}}
-.grip{width:40px;height:5px;border-radius:9px;background:var(--line);align-self:center}
-.sheet h2{font-family:var(--f-display);font-weight:800;font-size:36px;line-height:1}
-.opts{display:flex;flex-wrap:wrap;gap:8px}
-.opt{position:relative}
-.opt input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
-.opt span{display:inline-block;padding:8px 13px;border-radius:999px;border:1px solid var(--line);font-weight:600;font-size:14px}
-.opt input:checked+span{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-.opt input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
-.range-head{display:flex;justify-content:space-between;align-items:baseline}
-.range-head output{font-family:var(--f-display);font-weight:800;font-size:26px;font-variant-numeric:tabular-nums}
-input[type=range]{width:100%;accent-color:var(--accent)}
-.preview{display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--accent-soft);color:var(--accent);border-radius:12px;padding:12px 14px;font-weight:700}
-.preview.zero{background:var(--surface-2);color:var(--muted)}
-.sheet-actions{display:grid;grid-template-columns:1fr 2fr;gap:10px}
-.rules{display:flex;flex-direction:column}
-.rule{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:12px 0;border-top:1px solid var(--line)}
-.rule:first-child{border-top:0}
-.rule-name{display:flex;align-items:center;gap:8px;font-weight:700}
-.rule-max{font-family:var(--f-display);font-weight:800;font-size:22px;line-height:1;text-align:right}
-.rule-max small{font-family:var(--f-body);font-size:11px;font-weight:600;color:var(--muted);display:block}
-.rule p{font-size:13.5px;color:var(--muted)}
-
-.toast{position:fixed;z-index:30;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-weight:600;font-size:14px;max-width:calc(100% - 32px);text-align:center;box-shadow:var(--shadow)}
-
-@media (prefers-reduced-motion: reduce){.view,.sheet{animation:none}}
-@media (max-width:360px){.display{font-size:48px}.bib-num{font-size:112px}.lb-detail{padding-left:0}}
-</style>
-<style>
-/* Standalone web app: reset and safe areas that the artifact viewer used to provide */
-html{background:var(--bg);-webkit-text-size-adjust:100%}
-body{margin:0;-webkit-tap-highlight-color:transparent}
-img{max-width:100%}
-.top{top:0;padding-top:calc(14px + env(safe-area-inset-top,0px))}
-.input{font-size:16px}
-.install{position:fixed;z-index:15;left:0;right:0;bottom:calc(76px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.install-inner{max-width:428px;margin:0 auto;display:flex;gap:12px;align-items:flex-start;background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:12px 14px;box-shadow:var(--shadow);font-size:14px}
-.install-inner p{flex:1}
-.install-x{background:none;border:0;color:var(--muted);font-size:22px;line-height:1;padding:0 2px;cursor:pointer}
-</style>
+<link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body>
+
 <div class="app">
   <header class="top">
     <div class="brand">Wochen<span>duell</span></div>
-    <div class="proto-pill">Prototyp · Beispieldaten</div>
+    <div class="pill" id="group-pill" hidden></div>
   </header>
   <main>
-    <div class="view" id="view-heute"></div>
+    <div class="view loading" id="view-loading"><p class="muted" data-i18n="loading">Lädt …</p></div>
+    <div class="view" id="view-auth" hidden></div>
+    <div class="view" id="view-onboard" hidden></div>
+    <div class="view" id="view-heute" hidden></div>
     <div class="view" id="view-rangliste" hidden></div>
     <div class="view" id="view-feed" hidden></div>
-    <div class="view" id="view-verbindungen" hidden></div>
+    <div class="view" id="view-profil" hidden></div>
   </main>
 </div>
 
-<nav class="tabbar" aria-label="Hauptnavigation">
+<nav class="tabbar" id="tabbar" aria-label="Navigation" hidden>
   <div class="tabbar-inner">
-    <button class="tab" data-tab="heute"><svg class="ico" viewBox="0 0 24 24"><path d="M3 12h4l2.5-6 4 12 2.5-6H21"/></svg>Heute</button>
-    <button class="tab" data-tab="rangliste"><svg class="ico" viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7"/></svg>Rangliste</button>
-    <button class="plus" data-action="open-workout" aria-label="Workout eintragen"><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
-    <button class="tab" data-tab="feed"><svg class="ico" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Feed</button>
-    <button class="tab" data-tab="verbindungen"><svg class="ico" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>Apps</button>
+    <button class="tab" data-tab="heute"><svg class="ico" viewBox="0 0 24 24"><path d="M3 12h4l2.5-6 4 12 2.5-6H21"/></svg><span data-i18n="tab_heute">Heute</span></button>
+    <button class="tab" data-tab="rangliste"><svg class="ico" viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7"/></svg><span data-i18n="tab_rangliste">Rangliste</span></button>
+    <button class="plus" data-action="open-workout" data-i18n-aria="add_workout" aria-label="Workout eintragen"><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+    <button class="tab" data-tab="feed"><svg class="ico" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span data-i18n="tab_feed">Feed</span></button>
+    <button class="tab" data-tab="profil"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg><span data-i18n="tab_profil">Profil</span></button>
   </div>
 </nav>
 
@@ -268,421 +49,68 @@ img{max-width:100%}
   <form class="sheet" id="workout-form" role="dialog" aria-modal="true" aria-labelledby="wt">
     <div class="grip"></div>
     <div>
-      <h2 id="wt">Workout eintragen</h2>
-      <p class="hint" style="margin-top:6px">Für alles, was deine Uhr nicht mitbekommt. Workouts aus Apple Health und Whoop kommen automatisch.</p>
+      <h2 id="wt" data-i18n="add_workout">Workout eintragen</h2>
+      <p class="hint" style="margin-top:6px" data-i18n="sheet_workout_hint"></p>
     </div>
     <fieldset class="field">
-      <legend>Sportart</legend>
+      <legend data-i18n="sport">Sportart</legend>
       <div class="opts" id="sport-opts"></div>
     </fieldset>
     <div class="field">
-      <div class="range-head"><label for="dur">Dauer</label><output id="dur-out" for="dur">45 Min.</output></div>
+      <div class="range-head"><label for="dur" data-i18n="duration">Dauer</label><output id="dur-out" for="dur">45</output></div>
       <input type="range" id="dur" min="10" max="150" step="5" value="45">
     </div>
     <div class="preview" id="preview"></div>
     <div class="sheet-actions">
-      <button type="button" class="btn ghost" data-action="close-sheet">Abbrechen</button>
-      <button type="submit" class="btn">Eintragen</button>
+      <button type="button" class="btn ghost" data-action="close-sheet" data-i18n="cancel">Abbrechen</button>
+      <button type="submit" class="btn" data-i18n="add">Eintragen</button>
+    </div>
+  </form>
+</div>
+
+<div class="backdrop" id="sheet-values" data-action="backdrop" hidden>
+  <form class="sheet" id="values-form" role="dialog" aria-modal="true" aria-labelledby="vt" novalidate>
+    <div class="grip"></div>
+    <div>
+      <h2 id="vt" data-i18n="values_title">Tageswerte</h2>
+      <p class="hint" style="margin-top:6px" data-i18n="values_hint"></p>
+    </div>
+    <div class="field cat-steps">
+      <label for="v-steps" data-i18n="v_steps">Schritte</label>
+      <div class="unit-row"><input class="input" id="v-steps" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off"></div>
+    </div>
+    <div class="field">
+      <label for="v-burn" data-i18n="v_burn">Aktive Kalorien</label>
+      <div class="unit-row"><input class="input" id="v-burn" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off"><span class="muted">kcal</span></div>
+    </div>
+    <div class="field">
+      <label for="v-food" data-i18n="v_food">Gegessene Kalorien</label>
+      <div class="unit-row"><input class="input" id="v-food" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off"><span class="muted">kcal</span></div>
+    </div>
+    <p class="form-error" id="values-error" role="alert" hidden></p>
+    <div class="sheet-actions">
+      <button type="button" class="btn ghost" data-action="close-sheet" data-i18n="cancel">Abbrechen</button>
+      <button type="submit" class="btn" data-i18n="save">Speichern</button>
     </div>
   </form>
 </div>
 
 <div class="backdrop" id="sheet-rules" data-action="backdrop" hidden>
-  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="rt">
-    <div class="grip"></div>
-    <div>
-      <h2 id="rt">So gibt's Punkte</h2>
-      <p class="hint" style="margin-top:6px">Pro Tag sind bis zu 85 Punkte drin. Wer am Sonntag um 23:59 Uhr vorne liegt, gewinnt die Woche.</p>
-    </div>
-    <div class="rules">
-      <div class="rule cat-steps"><span class="rule-name"><i class="dot"></i>Schritte</span><span class="rule-max">25<small>max./Tag</small></span><p>1 Punkt pro 1.000 Schritte.</p></div>
-      <div class="rule cat-burn"><span class="rule-name"><i class="dot"></i>Verbrannte Kalorien</span><span class="rule-max">20<small>max./Tag</small></span><p>1 Punkt pro 50 aktive kcal, gemessen von Apple Watch oder Whoop.</p></div>
-      <div class="rule cat-train"><span class="rule-name"><i class="dot"></i>Training</span><span class="rule-max">30<small>max./Tag</small></span><p>10 Punkte ab 20 Minuten, 15 Punkte ab 45 Minuten. Bis zu 2 Einheiten pro Tag zählen.</p></div>
-      <div class="rule cat-food"><span class="rule-name"><i class="dot"></i>Ess-Ziel</span><span class="rule-max">10<small>max./Tag</small></span><p>10 Punkte, wenn du höchstens 10 % neben deinem Kalorienziel liegst, 5 Punkte bei bis zu 20 %. Gewertet wird um Mitternacht.</p></div>
-    </div>
-    <p class="hint">Alle setzen ihr eigenes Kalorienziel. Punkte gibt es fürs Treffen des Ziels, nicht fürs Wenig-Essen.</p>
-    <button type="button" class="btn" data-action="close-sheet">Verstanden</button>
-  </div>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="rt" id="rules-body"></div>
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-<script>
-(function(){
-const KEY='wochenduell-demo-v1';
-const DAY_SHORT=['Mo','Di','Mi','Do','Fr','Sa','So'];
-const DAY_LONG=['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'];
-const TODAY=3, WEEK=43;
-const CAP={steps:25,burn:20,train:30,food:10};
-const CATS=[{k:'steps',label:'Schritte'},{k:'burn',label:'Verbrannt'},{k:'train',label:'Training'},{k:'food',label:'Ess-Ziel'}];
-const SPORTS=['Laufen','Krafttraining','Radfahren','Yoga','Fußball','Schwimmen','HIIT','Sonstiges'];
-const FOOD_APPS=['MyFitnessPal','Yazio','Lose It!','Cronometer','Andere App'];
-const CODE='WD-7K4Q';
-
-const d=(s,k,e,w)=>({s,k,e,w:w||[]});
-const wo=(t,m,at,src)=>({t,m,at,src});
-// Beispieldaten: Montag bis Donnerstag der KW 43
-const PEOPLE=[
-  {id:'du',name:'Du',ini:'Du',goal:1900,days:[
-    d(11200,520,1950,[wo('Laufen',35,'07:05','Apple Health')]),
-    d(7400,380,2300,[wo('Krafttraining',50,'18:30','Manuell')]),
-    d(13100,610,1820,[wo('Yoga',25,'20:10','Apple Health')]),
-    d(8432,486,1640,[wo('Krafttraining',52,'07:40','Apple Health')])]},
-  {id:'jonas',name:'Jonas',ini:'JO',goal:2600,days:[
-    d(9800,780,2700,[wo('Krafttraining',60,'06:45','Whoop')]),
-    d(6100,640,3100,[wo('Fußball',90,'19:00','Whoop')]),
-    d(5200,420,2550),
-    d(10400,820,2400,[wo('Krafttraining',55,'06:50','Whoop')])]},
-  {id:'sara',name:'Sara',ini:'SA',goal:1700,days:[
-    d(12800,450,1720,[wo('Krafttraining',45,'17:15','Apple Health')]),
-    d(9900,400,1650,[wo('Laufen',25,'07:00','Apple Health')]),
-    d(15600,600,1900,[wo('Yoga',30,'21:00','Manuell')]),
-    d(7200,320,1500)]},
-  {id:'lena',name:'Lena',ini:'LE',goal:2000,days:[
-    d(8200,350,2050,[wo('Yoga',60,'18:00','Apple Health')]),
-    d(10300,470,1980,[wo('Laufen',30,'06:30','Apple Health')]),
-    d(7600,300,2600),
-    d(9100,410,1900,[wo('Schwimmen',45,'12:15','Apple Health')])]},
-  {id:'mia',name:'Mia',ini:'MI',goal:1800,days:[
-    d(14500,560,1790,[wo('Laufen',45,'06:20','Apple Health')]),
-    d(12100,430,1850),
-    d(9800,510,2100,[wo('Radfahren',40,'17:45','Apple Health')]),
-    d(6300,240,null)]},
-  {id:'tim',name:'Tim',ini:'TI',goal:2400,days:[
-    d(4300,210,2900),
-    d(5600,690,2500,[wo('Radfahren',75,'18:20','Whoop')]),
-    d(3900,180,null),
-    d(6800,530,2350,[wo('Krafttraining',40,'08:10','Whoop')])]}
-];
-const PAST=[{kw:42,id:'du',pts:287},{kw:41,id:'jonas',pts:311},{kw:40,id:'mia',pts:298}];
-const byId=Object.fromEntries(PEOPLE.map(p=>[p.id,p]));
-
-/* ---------- Punkte ---------- */
-const fmt=n=>n.toLocaleString('de-DE');
-const stepPts=s=>Math.min(CAP.steps,Math.floor(s/1000));
-const burnPts=k=>Math.min(CAP.burn,Math.floor(k/50));
-const oneWorkout=m=>m>=45?15:m>=20?10:0;
-const trainPts=ws=>ws.map(w=>oneWorkout(w.m)).sort((a,b)=>b-a).slice(0,2).reduce((a,b)=>a+b,0);
-const foodPts=(e,g)=>{if(e==null||!g)return 0;const dev=Math.abs(e-g)/g;return dev<=0.10?10:dev<=0.20?5:0};
-
-/* ---------- Zustand (nur in diesem Browser) ---------- */
-const fresh=()=>({tab:'heute',added:[],whoop:false,health:true,foodApp:'MyFitnessPal',goal:1900,kudos:{},open:null});
-let S=load();
-function load(){try{const raw=localStorage.getItem(KEY);if(raw)return Object.assign(fresh(),JSON.parse(raw))}catch(e){}return fresh()}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
-
-const goalOf=p=>p.id==='du'?S.goal:p.goal;
-const daysOf=p=>p.days.map((x,i)=>p.id==='du'&&i===TODAY?Object.assign({},x,{w:x.w.concat(S.added)}):x);
-function score(p,i){const x=daysOf(p)[i];const r={steps:stepPts(x.s),burn:burnPts(x.k),train:trainPts(x.w),food:foodPts(x.e,goalOf(p))};r.total=r.steps+r.burn+r.train+r.food;return r}
-function week(p){const t={steps:0,burn:0,train:0,food:0,total:0};for(let i=0;i<=TODAY;i++){const s=score(p,i);for(const k in t)t[k]+=s[k]}return t}
-const ranking=()=>PEOPLE.map(p=>Object.assign({p},week(p))).sort((a,b)=>b.total-a.total);
-
-/* ---------- Bausteine ---------- */
-const I={
-  heart:'<svg class="ico" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-7.5-10.2A4.2 4.2 0 0 1 12 7.3a4.2 4.2 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20z"/></svg>',
-  band:'<svg class="ico" viewBox="0 0 24 24"><path d="M9 3h6l1 6M9 3 8 9M8 15l1 6h6l1-6"/><rect x="6.5" y="9" width="11" height="6" rx="2"/></svg>',
-  food:'<svg class="ico" viewBox="0 0 24 24"><path d="M7 3v7a2 2 0 0 0 2 2v9M5 3v5M9 3v5M18 21V3c-2 0-3.5 2.5-3.5 6s1.5 4 3.5 4"/></svg>',
-  target:'<svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".6"/></svg>',
-  flame:'<svg class="ico" viewBox="0 0 24 24"><path d="M12 3s5.5 4.2 5.5 9.5a5.5 5.5 0 0 1-11 0c0-2.3 1.2-3.8 2.3-4.8 0 2.1.9 3.3 2.2 3.3 0-3.4 1-6 1-8z"/></svg>',
-  warn:'<svg class="ico" viewBox="0 0 24 24"><path d="M12 4 2.8 19.5h18.4z"/><path d="M12 10v4.5M12 17.2v.1"/></svg>'
-};
-const av=p=>`<span class="avatar${p.id==='du'?' me':''}">${p.ini}</span>`;
-const dayLabel=i=>i===TODAY?'Heute':i===TODAY-1?'Gestern':DAY_LONG[i];
-const plural=(n,one,many)=>`${n} ${n===1?one:many}`;
-
-/* ---------- Heute ---------- */
-function renderHeute(){
-  const r=ranking(), i=r.findIndex(e=>e.p.id==='du'), me=r[i];
-  const du=byId.du, x=daysOf(du)[TODAY], t=score(du,TODAY);
-  let line;
-  if(i===0){const lead=me.total-r[1].total;line=lead===0?`Punktgleich mit <strong>${r[1].p.name}</strong>. Jetzt zählt jeder Schritt.`:`Du führst mit <strong>${plural(lead,'Punkt','Punkten')} Vorsprung</strong> vor ${r[1].p.name}.`}
-  else{const a=r[i-1],gap=a.total-me.total;line=gap===0?`Punktgleich mit <strong>${a.p.name}</strong>.`:`<strong>${plural(gap,'Punkt','Punkte')}</strong> hinter ${a.p.name}${i===1?' auf Platz 1':''}.`}
-
-  const mins=x.w.reduce((a,w)=>a+w.m,0);
-  const rows=[
-    {k:'steps',label:'Schritte',val:fmt(x.s),sub:'iPhone & Apple Watch · Apple Health'},
-    {k:'burn',label:'Verbrannt',val:`${fmt(x.k)} kcal`,sub:S.whoop?'Whoop':'Apple Watch · Apple Health'},
-    {k:'train',label:'Training',val:x.w.length?`${plural(x.w.length,'Workout','Workouts')} · ${mins} Min.`:'Noch keins',sub:x.w.length?x.w.map(w=>w.t).join(', '):'Ab 20 Minuten gibt es Punkte'},
-    {k:'food',label:'Ess-Ziel',val:x.e==null?'Noch nichts':`${fmt(x.e)} / ${fmt(S.goal)} kcal`,sub:`${S.foodApp} über Apple Health · Wertung um 0 Uhr`}
-  ];
-  const left={train:CAP.train-t.train,steps:CAP.steps-t.steps,burn:CAP.burn-t.burn};
-  const leftTotal=left.train+left.steps+left.burn;
-
-  const rival=i===0?r[1]:r[0];
-  const mine=DAY_SHORT.map((_,j)=>j<=TODAY?score(du,j).total:null);
-  const theirs=DAY_SHORT.map((_,j)=>j<=TODAY?score(rival.p,j).total:null);
-  const scale=Math.ceil(Math.max(40,...mine.filter(v=>v!=null),...theirs.filter(v=>v!=null))/10)*10;
-  const pct=v=>(v/scale*100).toFixed(1)+'%';
-  const aria='Deine Punkte pro Tag: '+DAY_SHORT.slice(0,TODAY+1).map((dd,j)=>`${dd} ${mine[j]}`).join(', ');
-
-  return `
-  <div>
-    <p class="eyebrow">Donnerstag, 22. Okt. · KW ${WEEK}</p>
-    <h1 class="display">Platz ${i+1}</h1>
-    <p class="lede">${line}</p>
-  </div>
-  ${S.health?'':`<div class="alert">${I.warn}<div><p><strong>Apple Health ist getrennt.</strong> Schritte, Kalorien und Workouts kommen gerade nicht rein.</p><button class="link-btn" data-action="health">Wieder verbinden</button></div></div>`}
-  <section class="card">
-    <div class="card-head"><h2 class="card-title">Heute</h2><button class="link-btn" data-action="open-rules">So gibt's Punkte</button></div>
-    <div class="today-total"><span class="bignum">${t.total}</span><span class="bignum-label">Punkte<br>heute</span></div>
-    <div class="metrics">
-      ${rows.map(m=>`<div class="metric cat-${m.k}">
-        <span class="metric-label"><i class="dot"></i>${m.label}</span><span class="metric-val">${m.val}</span>
-        <span class="metric-sub">${m.sub}</span><span class="metric-pts">${t[m.k]} / ${CAP[m.k]} Pkt</span>
-        <span class="bar"><i style="width:${t[m.k]/CAP[m.k]*100}%"></i></span>
-      </div>`).join('')}
-    </div>
-  </section>
-  ${leftTotal>0?`<section class="card">
-    <div class="card-head"><h2 class="card-title">Heute noch drin</h2><span class="muted" style="font-weight:700">+${leftTotal} Pkt</span></div>
-    <div class="chips">
-      ${left.train?`<span class="chip cat-train"><i class="dot"></i>+${left.train} Training</span>`:''}
-      ${left.steps?`<span class="chip cat-steps"><i class="dot"></i>+${left.steps} Schritte</span>`:''}
-      ${left.burn?`<span class="chip cat-burn"><i class="dot"></i>+${left.burn} Verbrannt</span>`:''}
-    </div>
-    ${left.train?`<button class="btn" data-action="open-workout">Workout eintragen</button>`:''}
-  </section>`:''}
-  <section class="card">
-    <div class="card-head"><h2 class="card-title">Deine Woche</h2><span class="muted" style="font-weight:700">${me.total} Pkt</span></div>
-    <div class="week" role="img" aria-label="${aria}">
-      ${DAY_SHORT.map((dd,j)=>`<div class="wk-col${j===TODAY?' today':''}">
-        <div class="wk-plot">${mine[j]==null?'<div class="wk-bar future"></div>':
-          `<div class="wk-bar me" style="height:${pct(mine[j])}"><span class="wk-val">${mine[j]}</span></div><div class="wk-bar rv" style="height:${pct(theirs[j])}"></div>`}</div>
-        <span class="wk-day">${dd}</span></div>`).join('')}
-    </div>
-    <div class="legend"><span><i class="sw me"></i>Du</span><span><i class="sw rv"></i>${rival.p.name} (Platz ${i===0?2:1})</span></div>
-  </section>`;
-}
-
-/* ---------- Rangliste ---------- */
-function renderRangliste(){
-  const r=ranking(), top=r[0], max=top.total||1;
-  const second=r[1].p.id==='du'?'dir':r[1].p.name;
-  return `
-  <div class="head-row">
-    <div><p class="eyebrow">KW ${WEEK} · Stand Donnerstag</p><h1 class="display">Rangliste</h1></div>
-    <button class="link-btn" data-action="open-rules" style="padding-bottom:12px">So gibt's Punkte</button>
-  </div>
-  <div class="bib-stage">
-    <div class="bib" aria-label="Platz 1: ${top.p.name} mit ${top.total} Punkten">
-      <i class="hole tl"></i><i class="hole tr"></i><i class="hole bl"></i><i class="hole br"></i>
-      <div class="bib-strip">Wochenduell · KW ${WEEK}</div>
-      <div class="bib-num">1</div>
-      <div class="bib-name">${top.p.id==='du'?'Du!':top.p.name}</div>
-      <div class="bib-meta">${top.total} Punkte · ${top.total-r[1].total} vor ${second}</div>
-    </div>
-  </div>
-  <section class="card">
-    <div class="lb">
-      ${r.map((e,idx)=>`<div class="lb-item">
-        <button class="lb-row${e.p.id==='du'?' is-me':''}" data-action="toggle-row" data-id="${e.p.id}" aria-expanded="${S.open===e.p.id}">
-          <span class="lb-rank">${idx+1}</span>${av(e.p)}
-          <span class="lb-main"><span class="lb-name">${e.p.name}${idx===0?'<span class="crown">Führt</span>':''}</span>
-            <span class="stack">${CATS.map(c=>`<i class="cat-${c.k}" style="width:${(e[c.k]/max*100).toFixed(1)}%"></i>`).join('')}</span></span>
-          <span class="lb-total">${e.total}<small>Pkt</small></span>
-        </button>
-        <div class="lb-detail"${S.open===e.p.id?'':' hidden'}>${CATS.map(c=>`<div class="cat-${c.k}"><i class="dot"></i>${c.label}<b>${e[c.k]}</b></div>`).join('')}</div>
-      </div>`).join('')}
-    </div>
-    <div class="legend">${CATS.map(c=>`<span class="cat-${c.k}"><i class="dot"></i>${c.label}</span>`).join('')}</div>
-  </section>
-  <section class="card">
-    <h2 class="card-title">Bisherige Wochensieger</h2>
-    <div class="past">${PAST.map(w=>{const p=byId[w.id];return `<div class="past-row"><span class="past-kw">KW ${w.kw}</span>${av(p)}<span>${p.name}</span><span class="past-pts">${w.pts} Pkt</span></div>`}).join('')}</div>
-  </section>
-  <section class="card">
-    <h2 class="card-title">Freunde einladen</h2>
-    <div class="invite"><span class="code" id="invite-code">${CODE}</span><button class="btn ghost" data-action="copy-code">Code kopieren</button></div>
-    <p class="hint">Wer den Code in der App eingibt, steigt in eure Gruppe ein und ist ab der nächsten Woche in der Wertung.</p>
-  </section>`;
-}
-
-/* ---------- Feed ---------- */
-function hash(s){let h=0;for(const ch of s)h=(h*31+ch.charCodeAt(0))>>>0;return h}
-function feedItems(){
-  const items=[];
-  PEOPLE.forEach(p=>daysOf(p).forEach((x,i)=>{
-    x.w.forEach((w,j)=>items.push({id:`w-${p.id}-${i}-${j}-${w.at}`,day:i,at:w.at,p,kind:'workout',title:`${w.t} · ${w.m} Min.`,pts:oneWorkout(w.m),src:w.src}));
-    if(x.s>=12000)items.push({id:`s-${p.id}-${i}`,day:i,at:'21:30',p,kind:'steps',title:`${fmt(x.s)} Schritte an einem Tag`,pts:stepPts(x.s),src:'Apple Health'});
-  }));
-  for(let i=0;i<TODAY;i++){
-    const best=PEOPLE.map(p=>({p,t:score(p,i).total})).sort((a,b)=>b.t-a.t)[0];
-    items.push({id:`d-${i}`,day:i,at:'23:59',p:best.p,kind:'winner',title:`Tagessieg am ${DAY_LONG[i]} mit ${best.t} Punkten`});
-  }
-  return items.sort((a,b)=>b.day-a.day||b.at.localeCompare(a.at));
-}
-function renderFeed(){
-  const items=feedItems();
-  let html=`<div><p class="eyebrow">Eure Gruppe · 6 Leute</p><h1 class="display">Feed</h1><p class="lede">Alles, was diese Woche passiert ist. Gib Respekt, wo er fällig ist.</p></div>`;
-  for(let day=TODAY;day>=0;day--){
-    const list=items.filter(it=>it.day===day);
-    if(!list.length)continue;
-    html+=`<p class="day-head">${dayLabel(day)}</p><div class="posts">`+list.map(it=>{
-      const n=hash(it.id)%6+(S.kudos[it.id]?1:0);
-      return `<article class="post${it.kind==='winner'?' winner':''}">
-        ${av(it.p)}
-        <div>
-          <div class="post-top"><span class="post-who">${it.p.name}</span><span class="post-time">${it.at} Uhr</span></div>
-          <p class="post-title">${it.title}</p>
-          <div class="post-foot">
-            ${it.kind==='winner'?'<span class="src">Tageswertung</span>':`<span class="src">${it.src}</span>`}
-            ${it.pts?`<span class="pts">+${it.pts} Pkt</span>`:it.kind==='workout'?'<span class="src">unter 20 Min.</span>':''}
-            <button class="kudos" data-action="kudos" data-id="${it.id}" aria-pressed="${!!S.kudos[it.id]}" aria-label="Respekt geben, bisher ${n}">${I.flame}${n}</button>
-          </div>
-        </div>
-      </article>`}).join('')+`</div>`;
-  }
-  return html;
-}
-
-/* ---------- Verbindungen ---------- */
-function renderConn(){
-  return `
-  <div><p class="eyebrow">Datenquellen</p><h1 class="display">Verbindungen</h1><p class="lede">Einmal verbinden, danach laufen deine Werte automatisch in die Challenge.</p></div>
-  <section class="card">
-    <div class="conn-head"><span class="conn-icon">${I.heart}</span><div class="conn-name"><b>Apple Health</b><span class="muted">Die Sammelstelle auf deinem iPhone</span></div><span class="status ${S.health?'on':'off'}">${S.health?'Verbunden':'Getrennt'}</span></div>
-    <div class="tags"><span class="tag">Schritte</span><span class="tag">Aktive Kalorien</span><span class="tag">Workouts</span><span class="tag">Gegessene Kalorien</span></div>
-    <button class="btn ghost" data-action="health">${S.health?'Trennen':'Wieder verbinden'}</button>
-  </section>
-  <section class="card">
-    <div class="conn-head"><span class="conn-icon">${I.band}</span><div class="conn-name"><b>Whoop</b><span class="muted">Login bei Whoop, du gibst die Daten frei</span></div><span class="status ${S.whoop?'on':'off'}">${S.whoop?'Verbunden':'Nicht verbunden'}</span></div>
-    <div class="tags"><span class="tag">Workouts</span><span class="tag">Strain</span><span class="tag">Verbrannte Kalorien</span></div>
-    <button class="btn${S.whoop?' ghost':''}" data-action="whoop">${S.whoop?'Trennen':'Mit Whoop verbinden'}</button>
-  </section>
-  <section class="card">
-    <div class="conn-head"><span class="conn-icon">${I.food}</span><div class="conn-name"><b>Kalorien-App</b><span class="muted">Läuft über Apple Health, kein extra Login</span></div></div>
-    <div class="flow"><span class="step">${S.foodApp}</span><span class="arrow">→</span><span class="step">Apple Health</span><span class="arrow">→</span><span class="step">Wochenduell</span></div>
-    <div class="field"><label for="food-app">Welche App nutzt du?</label>
-      <select class="input" id="food-app">${FOOD_APPS.map(a=>`<option${a===S.foodApp?' selected':''}>${a}</option>`).join('')}</select></div>
-    <p class="hint">Einmalig in deiner Kalorien-App die Apple-Health-Freigabe für Ernährung einschalten. Danach kommen deine gegessenen Kalorien automatisch an.</p>
-  </section>
-  <section class="card">
-    <div class="conn-head"><span class="conn-icon">${I.target}</span><div class="conn-name"><b>Dein Kalorienziel</b><span class="muted">Zählt für die Ess-Ziel-Punkte</span></div></div>
-    <div class="field"><label for="goal">Kalorien pro Tag</label>
-      <div class="goal-row"><input class="input" id="goal" type="number" inputmode="numeric" min="1000" max="5000" step="50" value="${S.goal}"><span class="muted">kcal</span></div></div>
-    <p class="hint">Liegst du höchstens 10 % daneben, gibt's 10 Punkte. Bis 20 % daneben gibt's 5.</p>
-  </section>
-  <section class="card">
-    <h2 class="card-title">Über diesen Prototyp</h2>
-    <p class="hint">Alle Zahlen und Freunde hier sind Beispiele. Beim Verbinden passiert noch nichts Echtes. Was du einträgst, bleibt nur in diesem Browser.</p>
-    <button class="btn ghost" data-action="reset">Demo zurücksetzen</button>
-  </section>`;
-}
-
-/* ---------- Steuerung ---------- */
-const $=id=>document.getElementById(id);
-function render(){
-  $('view-heute').innerHTML=renderHeute();
-  $('view-rangliste').innerHTML=renderRangliste();
-  $('view-feed').innerHTML=renderFeed();
-  $('view-verbindungen').innerHTML=renderConn();
-}
-function setTab(tab,scroll){
-  S.tab=tab;save();
-  ['heute','rangliste','feed','verbindungen'].forEach(v=>{$('view-'+v).hidden=v!==tab});
-  document.querySelectorAll('[data-tab]').forEach(b=>{if(b.dataset.tab===tab)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
-  if(scroll!==false)window.scrollTo(0,0);
-}
-let toastTimer;
-function toast(msg){const t=$('toast');t.textContent=msg;t.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{t.hidden=true},2600)}
-
-let opener=null;
-function openSheet(id,from){
-  opener=from||null;
-  if(id==='sheet-workout')updatePreview();
-  $(id).hidden=false;document.body.style.overflow='hidden';
-  const f=$(id).querySelector('input:checked,button');if(f)f.focus();
-}
-function closeSheets(){
-  document.querySelectorAll('.backdrop').forEach(b=>b.hidden=true);
-  document.body.style.overflow='';
-  if(opener&&document.body.contains(opener))opener.focus();opener=null;
-}
-
-$('sport-opts').innerHTML=SPORTS.map((s,i)=>`<label class="opt"><input type="radio" name="sport" value="${s}"${i===1?' checked':''}><span>${s}</span></label>`).join('');
-function workoutDelta(m){const ws=daysOf(byId.du)[TODAY].w;return trainPts(ws.concat({m}))-trainPts(ws)}
-function updatePreview(){
-  const m=+$('dur').value, delta=workoutDelta(m), pv=$('preview');
-  $('dur-out').textContent=`${m} Min.`;
-  pv.classList.toggle('zero',delta<=0);
-  pv.innerHTML=delta>0?`<span>Bringt dir heute</span><span>+${delta} Pkt</span>`
-    :m<20?'<span>Punkte gibt es ab 20 Minuten</span>'
-    :'<span>Heute zählen schon 2 Workouts. Eintragen geht trotzdem.</span>';
-}
-$('dur').addEventListener('input',updatePreview);
-$('workout-form').addEventListener('submit',e=>{
-  e.preventDefault();
-  const sport=new FormData(e.target).get('sport')||'Sonstiges', m=+$('dur').value, delta=workoutDelta(m);
-  const now=new Date(), at=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
-  S.added.push({t:sport,m,at,src:'Manuell'});save();
-  closeSheets();render();setTab('heute');
-  toast(delta>0?`${sport} eingetragen · +${delta} Pkt`:`${sport} eingetragen`);
-});
-
-document.addEventListener('click',e=>{
-  const tabBtn=e.target.closest('[data-tab]');
-  if(tabBtn){setTab(tabBtn.dataset.tab);return}
-  const a=e.target.closest('[data-action]');
-  if(!a)return;
-  const act=a.dataset.action;
-  if(act==='backdrop'){if(e.target===a)closeSheets();return}
-  if(act==='open-workout')openSheet('sheet-workout',a);
-  else if(act==='open-rules')openSheet('sheet-rules',a);
-  else if(act==='close-sheet')closeSheets();
-  else if(act==='toggle-row'){
-    S.open=S.open===a.dataset.id?null:a.dataset.id;save();
-    document.querySelectorAll('.lb-row').forEach(b=>{const on=b.dataset.id===S.open;b.setAttribute('aria-expanded',on);b.nextElementSibling.hidden=!on});
-  }
-  else if(act==='kudos'){
-    const id=a.dataset.id;S.kudos[id]=!S.kudos[id];if(!S.kudos[id])delete S.kudos[id];save();
-    const n=hash(id)%6+(S.kudos[id]?1:0);
-    a.setAttribute('aria-pressed',!!S.kudos[id]);a.setAttribute('aria-label',`Respekt geben, bisher ${n}`);a.innerHTML=I.flame+n;
-  }
-  else if(act==='whoop'){
-    S.whoop=!S.whoop;save();render();
-    toast(S.whoop?'Whoop verbunden · Workouts kommen ab jetzt automatisch':'Whoop getrennt');
-  }
-  else if(act==='health'){
-    S.health=!S.health;save();render();
-    toast(S.health?'Apple Health verbunden':'Apple Health getrennt');
-  }
-  else if(act==='copy-code'){
-    const sel=()=>{const r=document.createRange();r.selectNodeContents($('invite-code'));const s=getSelection();s.removeAllRanges();s.addRange(r);toast('Code markiert, jetzt kopieren')};
-    try{navigator.clipboard.writeText(CODE).then(()=>toast('Code kopiert'),sel)}catch(err){sel()}
-  }
-  else if(act==='reset'){
-    S=fresh();save();render();setTab('verbindungen');toast('Demo zurückgesetzt');
-  }
-});
-document.addEventListener('change',e=>{
-  if(e.target.id==='food-app'){S.foodApp=e.target.value;save();render();toast(`${S.foodApp} ausgewählt`)}
-  if(e.target.id==='goal'){
-    const v=Math.min(5000,Math.max(1000,Math.round((+e.target.value||S.goal)/50)*50));
-    S.goal=v;save();render();toast(`Kalorienziel: ${fmt(v)} kcal`);
-  }
-});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheets()});
-
-render();setTab(S.tab,false);
-})();
-</script>
-
 <div class="install" id="install" hidden>
   <div class="install-inner">
-    <p><strong>Als App aufs iPhone:</strong> In Safari auf Teilen tippen (bei neuerem iOS zuerst auf „•••“), dann auf „Zum Home-Bildschirm“.</p>
-    <button class="install-x" id="install-x" aria-label="Hinweis schließen">×</button>
+    <p data-i18n-html="install_hint"></p>
+    <button class="install-x" id="install-x" data-i18n-aria="close_hint" aria-label="Hinweis schließen">×</button>
   </div>
 </div>
-<script>
-(function(){
-  var KEY='wochenduell-install-hint';
-  var ios=/iPhone|iPad|iPod/.test(navigator.userAgent);
-  var standalone=navigator.standalone===true||window.matchMedia('(display-mode: standalone)').matches;
-  var dismissed=false;try{dismissed=localStorage.getItem(KEY)==='1'}catch(e){}
-  var el=document.getElementById('install');
-  if(ios&&!standalone&&!dismissed)el.hidden=false;
-  document.getElementById('install-x').addEventListener('click',function(){el.hidden=true;try{localStorage.setItem(KEY,'1')}catch(e){}});
-})();
-</script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
+<script src="config.js?v=1"></script>
+<script src="i18n.js?v=1"></script>
+<script src="app.js?v=1"></script>
 </body>
 </html>
