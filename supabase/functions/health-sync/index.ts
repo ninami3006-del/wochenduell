@@ -1,8 +1,10 @@
-// Receives today's Apple Health values from the iPhone Shortcut.
-// URL: /functions/v1/health-sync?key=<personal sync key>[&format=text]
-// Body (JSON, from the Shortcut): { "steps": 8432, "active": 486.2, "eaten": 1640 }
-// Query parameters with the same names work too. Deployed with --no-verify-jwt:
-// the personal key is the only credential.
+// Receives Apple Health values from the iPhone Shortcut "Wochenduell Sync".
+// URL: /functions/v1/health-sync[?format=text]
+// Body (JSON, from the Shortcut): { "key": "<personal sync key>", "steps": "...", "active": "...", "eaten": "..." }
+// Each value is either one number (today) or one line per day "yyyy-MM-dd;value", newest first,
+// as the Shortcut writes them. Today and yesterday are saved, so yesterday's final total gets
+// corrected too. Query parameters with the same names work as well. Deployed with
+// --no-verify-jwt: the personal key is the only credential.
 import { createClient } from 'npm:@supabase/supabase-js@2.117.2';
 
 const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
@@ -10,7 +12,9 @@ const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE
 });
 
 const UUID_ANY = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
-const LIMITS = { steps: 200000, active: 20000, eaten: 20000 };
+const LIMITS = { steps: 200000, active: 20000, eaten: 20000 } as const;
+type Field = keyof typeof LIMITS;
+const FIELDS: Field[] = ['steps', 'active', 'eaten'];
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -19,7 +23,9 @@ function json(body: unknown, status = 200) {
   });
 }
 
-// Numbers can arrive as JSON numbers or as text such as "8.432", "1.234,5" or "486,2".
+// Numbers arrive as JSON numbers or as text formatted by the phone: "8432", "8.432",
+// "1.234,5", "486,23" or "486,235". With a single separator we take it as thousands
+// grouping when that gives a plausible value, otherwise as the decimal mark.
 // Zero, empty or implausible values count as "no value" so they never overwrite real data.
 export function toInt(v: unknown, max: number): number | null {
   if (v === null || v === undefined || v === '') return null;
@@ -33,17 +39,35 @@ export function toInt(v: unknown, max: number): number | null {
     const comma = s.lastIndexOf(',');
     if (dot >= 0 && comma >= 0) {
       const dec = Math.max(dot, comma);
-      s = s.slice(0, dec).replace(/[.,]/g, '') + '.' + s.slice(dec + 1);
+      n = Number(s.slice(0, dec).replace(/[.,]/g, '') + '.' + s.slice(dec + 1));
     } else if (dot >= 0 || comma >= 0) {
       const parts = s.split(dot >= 0 ? '.' : ',');
-      const thousands = parts.length > 2 || (parts[1].length === 3 && parts[0].length <= 3 && parts[0] !== '0');
-      s = thousands ? parts.join('') : parts[0] + '.' + parts[1];
+      const grouped = Number(parts.join(''));
+      const looksGrouped = parts.length > 2 || parts.slice(1).every((p) => p.length === 3);
+      n = looksGrouped && grouped <= max ? grouped : Number(parts[0] + '.' + parts.slice(1).join(''));
+    } else {
+      n = Number(s);
     }
-    n = Number(s);
   }
   if (!Number.isFinite(n)) return null;
   const r = Math.round(n);
   return r > 0 && r <= max ? r : null;
+}
+
+// "yyyy-MM-dd;value" lines -> { day: value }. A bare number counts as today's value.
+export function perDay(v: unknown, max: number, today: string): Map<string, number | null> {
+  const out = new Map<string, number | null>();
+  if (v === null || v === undefined) return out;
+  const text = String(v);
+  const lines = [...text.matchAll(/(\d{4}-\d{2}-\d{2})\s*;\s*([^\n\r;]*)/g)];
+  if (!lines.length) {
+    out.set(today, toInt(v, max));
+    return out;
+  }
+  for (const [, day, value] of lines) {
+    if (!out.has(day)) out.set(day, toInt(value, max)); // newest first; keep the first per day
+  }
+  return out;
 }
 
 function berlinDay(offsetDays = 0): string {
@@ -58,13 +82,13 @@ const TEXT = {
   badKey: 'Wochenduell: Dieser Schlüssel gilt nicht mehr. Starte es bitte über den Button in der App. / This key is no longer valid. Please use the button in the app.',
   error: 'Wochenduell: Gerade gibt es ein Problem. Versuch es gleich nochmal. / Something went wrong. Please try again in a moment.',
 };
-function summary(lang: string, steps: number | null, active: number | null, eaten: number | null) {
+function summary(lang: string, v: Record<Field, number | null>) {
   const de = lang !== 'en';
   const f = (n: number) => n.toLocaleString(de ? 'de-DE' : 'en-GB');
   const parts = [
-    steps != null ? `${f(steps)} ${de ? 'Schritte' : 'steps'}` : null,
-    active != null ? `${f(active)} kcal ${de ? 'aktiv' : 'active'}` : null,
-    eaten != null ? `${f(eaten)} kcal ${de ? 'gegessen' : 'eaten'}` : null,
+    v.steps != null ? `${f(v.steps)} ${de ? 'Schritte' : 'steps'}` : null,
+    v.active != null ? `${f(v.active)} kcal ${de ? 'aktiv' : 'active'}` : null,
+    v.eaten != null ? `${f(v.eaten)} kcal ${de ? 'gegessen' : 'eaten'}` : null,
   ].filter(Boolean);
   if (!parts.length) return de ? 'Wochenduell: In Apple Health sind für heute noch keine Werte.' : 'Wochenduell: Apple Health has no values for today yet.';
   return (de ? 'Übernommen: ' : 'Imported: ') + parts.join(' · ');
@@ -96,32 +120,45 @@ Deno.serve(async (req) => {
   if (!keyMatch) return asText ? textReply(TEXT.noKey) : json({ ok: false, error: 'missing_or_invalid_key' }, 400);
   const key = keyMatch[0];
 
-  // Today in German time; a Shortcut may also send yesterday's values with "day".
-  let day = berlinDay();
-  const askedDay = String(pick('day') ?? '').trim();
-  if (askedDay && [berlinDay(), berlinDay(-1)].includes(askedDay)) day = askedDay;
-
-  const steps = toInt(pick('steps'), LIMITS.steps);
-  const active = toInt(pick('active'), LIMITS.active);
-  const eaten = toInt(pick('eaten'), LIMITS.eaten);
-
-  const { data, error } = await admin.rpc('apply_health_sync', {
-    p_key: key, p_day: day, p_steps: steps, p_active: active, p_eaten: eaten,
-  });
-  if (error) {
-    if (String(error.message).includes('invalid_key')) return asText ? textReply(TEXT.badKey) : json({ ok: false, error: 'unknown_key' }, 403);
-    console.error(error);
-    return asText ? textReply(TEXT.error) : json({ ok: false, error: 'server_error' }, 500);
+  const today = berlinDay();
+  const yesterday = berlinDay(-1);
+  const days = new Map<string, Record<Field, number | null>>();
+  for (const field of FIELDS) {
+    for (const [day, value] of perDay(pick(field), LIMITS[field], today)) {
+      if (day !== today && day !== yesterday) continue;
+      const row = days.get(day) ?? { steps: null, active: null, eaten: null };
+      row[field] = value;
+      days.set(day, row);
+    }
   }
+  if (!days.has(today)) days.set(today, { steps: null, active: null, eaten: null });
+
+  // Yesterday first, so today's call is the one that stamps "last synced".
+  for (const day of [yesterday, today]) {
+    const v = days.get(day);
+    if (!v) continue;
+    if (day === yesterday && v.steps == null && v.active == null && v.eaten == null) continue;
+    const { error } = await admin.rpc('apply_health_sync', {
+      p_key: key, p_day: day, p_steps: v.steps, p_active: v.active, p_eaten: v.eaten,
+    });
+    if (error) {
+      if (String(error.message).includes('invalid_key')) return asText ? textReply(TEXT.badKey) : json({ ok: false, error: 'unknown_key' }, 403);
+      console.error(error);
+      return asText ? textReply(TEXT.error) : json({ ok: false, error: 'server_error' }, 500);
+    }
+  }
+
   const { data: row } = await admin.from('sync_keys').select('user_id').eq('key', key).maybeSingle();
   if (row) {
-    const raw = { steps: pick('steps') ?? null, active: pick('active') ?? null, eaten: pick('eaten') ?? null, method: req.method };
+    const clip = (x: unknown) => (x == null ? null : String(x).slice(0, 400));
+    const raw = { steps: clip(pick('steps')), active: clip(pick('active')), eaten: clip(pick('eaten')), method: req.method };
     const { error: logError } = await admin.from('health_sync_log').insert({ user_id: row.user_id, raw });
     if (logError) console.error(logError);
   }
+  const saved = days.get(today)!;
   if (asText) {
     const { data: prof } = row ? await admin.from('profiles').select('language').eq('id', row.user_id).maybeSingle() : { data: null };
-    return textReply(summary(prof?.language ?? 'de', steps, active, eaten));
+    return textReply(summary(prof?.language ?? 'de', saved));
   }
-  return json({ ok: true, name: data, day, saved: { steps, active, eaten } });
+  return json({ ok: true, day: today, saved, yesterday: days.get(yesterday) ?? null });
 });
