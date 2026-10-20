@@ -84,6 +84,16 @@
   };
   try { const tb = localStorage.getItem('wd-tab'); if (['heute', 'rangliste', 'feed', 'profil'].includes(tb)) S.tab = tb; } catch (e) {}
 
+  // Invite links look like …/wochenduell/?join=WD-XXXXXX; keep the code until the person joined.
+  (function captureInvite() {
+    const code = new URLSearchParams(location.search).get('join');
+    if (!code) return;
+    try { localStorage.setItem('wd-join', code.trim().toUpperCase()); } catch (e) {}
+    history.replaceState(null, '', location.pathname);
+  })();
+  const pendingJoin = () => { try { return localStorage.getItem('wd-join') || ''; } catch (e) { return ''; } };
+  const clearJoin = () => { try { localStorage.removeItem('wd-join'); } catch (e) {} };
+
   const isMe = (id) => !!S.user && id === S.user.id;
   const member = (id) => S.members.find((m) => m.id === id);
   const nameOf = (id) => (isMe(id) ? t('you') : (member(id) || {}).display_name || '?');
@@ -202,33 +212,44 @@
   }
 
   function renderOnboard() {
-    $('view-onboard').innerHTML = `
-      <div><p class="eyebrow">${t('onboard_eyebrow')}</p><h1 class="display">${t('hello', esc(S.me.display_name))}</h1><p class="lede">${t('onboard_lede')}</p></div>
-      <section class="card">
+    const invited = pendingJoin();
+    const create = `<section class="card">
         <h2 class="card-title">${t('create_group')}</h2>
         <form id="create-form" class="form" novalidate>
           <div class="field"><label for="group-name">${t('group_name')}</label><input class="input" id="group-name" maxlength="40" value="Wochenduell"></div>
-          <button class="btn block" type="submit">${t('create_group_cta')}</button>
+          <button class="btn block${invited ? ' ghost' : ''}" type="submit">${t('create_group_cta')}</button>
         </form>
-      </section>
-      <section class="card">
-        <h2 class="card-title">${t('join_group')}</h2>
+      </section>`;
+    const join = `<section class="card${invited ? ' invited' : ''}">
+        <h2 class="card-title">${invited ? t('invited_title') : t('join_group')}</h2>
+        ${invited ? `<p class="hint">${t('invited_lede')}</p>` : ''}
         <form id="join-form" class="form" novalidate>
-          <div class="field"><label for="join-code">${t('invite_code')}</label><input class="input code-input" id="join-code" placeholder="WD-XXXXXX" autocapitalize="characters" autocomplete="off" spellcheck="false" maxlength="9"></div>
+          <div class="field"><label for="join-code">${t('invite_code')}</label><input class="input code-input" id="join-code" placeholder="WD-XXXXXX" autocapitalize="characters" autocomplete="off" spellcheck="false" maxlength="20" value="${esc(invited)}"></div>
           <p class="form-error" id="join-error" role="alert" hidden></p>
-          <button class="btn block ghost" type="submit">${t('join_cta')}</button>
+          <button class="btn block${invited ? '' : ' ghost'}" type="submit">${t('join_cta')}</button>
         </form>
-      </section>
+      </section>`;
+    $('view-onboard').innerHTML = `
+      <div><p class="eyebrow">${t('onboard_eyebrow')}</p><h1 class="display">${t('hello', esc(S.me.display_name))}</h1><p class="lede">${t('onboard_lede')}</p></div>
+      ${invited ? join + create : create + join}
       ${langSwitch()}
       <button class="link-btn" data-action="logout">${t('logout')}</button>`;
   }
 
   /* ---------- views: app ---------- */
+  const inviteUrl = () => `${location.origin}${location.pathname}?join=${encodeURIComponent(S.group.invite_code)}`;
+  function inviteBox() {
+    return `<div class="invite-code" id="invite-code">${esc(S.group.invite_code)}</div>
+      <div class="actions">
+        <button class="btn" data-action="share-invite">${t('share_invite')}</button>
+        <button class="btn ghost" data-action="copy-code">${t('copy_code')}</button>
+      </div>
+      <p class="hint">${t('invite_hint')}</p>`;
+  }
   function inviteCard() {
     return `<section class="card">
       <h2 class="card-title">${t('invite_friends')}</h2>
-      <div class="invite"><span class="code" id="invite-code">${esc(S.group.invite_code)}</span><button class="btn ghost" data-action="copy-code">${t('copy_code')}</button></div>
-      <p class="hint">${t('invite_hint')}</p>
+      ${inviteBox()}
     </section>`;
   }
 
@@ -521,8 +542,8 @@
       <section class="card">
         <h2 class="card-title">${t('your_group')}</h2>
         <p><strong>${esc(g.name)}</strong></p>
-        <div class="invite"><span class="code" id="invite-code">${esc(g.invite_code)}</span><button class="btn ghost" data-action="copy-code">${t('copy_code')}</button></div>
-        <p class="hint">${t('invite_hint')}</p>
+        ${inviteBox()}
+        <button class="link-btn" data-action="renew-code">${t('new_code')}</button>
         <div class="members">${S.members.map((m) => `<div class="member">${av(m.id)}<span>${esc(m.display_name)}${isMe(m.id) ? ` (${t('you')})` : ''}</span></div>`).join('')}</div>
       </section>
       ${healthCard()}
@@ -763,6 +784,24 @@
     try { await navigator.clipboard.writeText(code); toast(t('code_copied')); } catch (e) { select(); }
   }
 
+  async function shareInvite() {
+    const url = inviteUrl();
+    const text = t('invite_share_text', S.group.invite_code);
+    if (navigator.share) {
+      try { await navigator.share({ title: 'Wochenduell', text, url }); return; } catch (e) { if (e && e.name === 'AbortError') return; }
+    }
+    try { await navigator.clipboard.writeText(`${text} ${url}`); toast(t('invite_link_copied')); } catch (e) { toast(url); }
+  }
+
+  async function renewCode() {
+    if (!window.confirm(t('confirm_new_code'))) return;
+    const { data, error } = await sb.rpc('renew_invite_code', { gid: S.group.id });
+    if (error) { console.error(error); toast(t('err_generic')); return; }
+    S.group.invite_code = data;
+    render();
+    toast(t('new_code_done'));
+  }
+
   async function toggleKudos(btn) {
     const id = btn.dataset.id;
     const k = S.kudos.get(id) || { n: 0, mine: false };
@@ -822,6 +861,8 @@
     else if (act === 'open-rules') openSheet('sheet-rules', a);
     else if (act === 'close-sheet') closeSheets();
     else if (act === 'copy-code') copyCode();
+    else if (act === 'share-invite') shareInvite();
+    else if (act === 'renew-code') renewCode();
     else if (act === 'copy-sync') copySync();
     else if (act === 'run-sync') { S.syncStarted = Date.now(); S.syncBefore = S.sync ? S.sync.last_used_at : null; }
     else if (act === 'open-health') openSheet('sheet-health', a);
@@ -869,10 +910,11 @@
 
     else if (form.id === 'join-form') busy(form, async () => {
       formError('join-error', '');
-      let code = $('join-code').value.trim().toUpperCase().replace(/\s+/g, '');
-      if (/^[A-Z0-9]{6}$/.test(code)) code = 'WD-' + code;
+      const typed = $('join-code').value.trim();
+      const code = typed.toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/^WD(?=.{6}$)/, '');
       const { data, error } = await sb.rpc('join_group', { code });
-      if (error) { formError('join-error', String(error.message).includes('invalid_code') ? t('err_code') : t('err_generic')); return; }
+      if (error) { formError('join-error', String(error.message).includes('invalid_code') ? t('err_code_named', typed) : t('err_generic')); return; }
+      clearJoin();
       await enter();
       toast(t('group_joined', data && data.name ? data.name : ''));
     });

@@ -272,3 +272,7 @@ img{max-width:100%}
 
 /* links styled as buttons */
 a.btn{display:block;text-decoration:none;-webkit-tap-highlight-color:transparent}
+
+/* ---------- invite code: unambiguous monospace, invited card highlighted ---------- */
+.invite-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:26px;font-weight:700;letter-spacing:.12em;text-align:center;padding:12px 14px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;-webkit-user-select:all;user-select:all}
+.card.invited{border:1.5px solid var(--accent)}
