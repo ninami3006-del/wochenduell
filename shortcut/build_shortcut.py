@@ -2,7 +2,7 @@
 
 The Shortcut is the same for everyone. The app starts it with
   shortcuts://run-shortcut?name=Wochenduell%20Sync&input=text&text=<personal sync key>
-For steps, active calories and dietary calories it reads the last 3 days from Health,
+For steps, active calories and calories eaten it reads the last 3 days from Health,
 grouped by day, and sends one line per day ("yyyy-MM-dd;value") to health-sync as JSON:
   POST <health-sync>?format=text  {"key": <input>, "steps": "<lines>", ...}
 The server keeps today and yesterday and answers with one sentence, which the Shortcut
@@ -25,9 +25,13 @@ import uuid
 OBJ = "￼"  # placeholder character marking where a variable sits inside text
 BASE_URL = "https://pkkfxhxizhezovjgfbne.supabase.co/functions/v1/health-sync"
 DAYS = "3"
-# (JSON field, Shortcuts type name, unit). "Dietary Calories" is last: it is the one name not
-# confirmed from a phone-built shortcut, and the others are sent before it is read.
-TYPES = (("steps", "Steps", "count"), ("active", "Active Calories", "kcal"), ("eaten", "Dietary Calories", "kcal"))
+# (JSON field, Shortcuts type name, unit), confirmed on a phone; each is sent right after reading.
+TYPES = (("steps", "Steps", "count"), ("active", "Active Calories", "kcal"))
+# The Shortcuts name for calories eaten is not documented ("Dietary Calories" came back empty on
+# the phone while Health had Yazio data). An unknown name only yields an empty value, no alert,
+# so several candidates are read and the server keeps the first one with data.
+EATEN_CANDIDATES = (("eaten", "Dietary Energy", "kcal"), ("eaten2", "Dietary Energy Consumed", "kcal"),
+                    ("eaten3", "Calories Consumed", "kcal"))
 
 REPEAT_ITEM = {"Type": "Variable", "VariableName": "Repeat Item"}
 VALUE_OF_ITEM = dict(REPEAT_ITEM, Aggrandizements=[{"Type": "WFPropertyVariableAggrandizement", "PropertyName": "Value"}])
@@ -125,6 +129,9 @@ def build():
         lines = b.daily_lines(b.health_samples(type_name, unit))
         sent.append((key, lines))
         response = b.post(sent)
+    for key, type_name, unit in EATEN_CANDIDATES:
+        sent.append((key, b.daily_lines(b.health_samples(type_name, unit))))
+    response = b.post(sent)
     b.add("is.workflow.actions.notification", {
         "WFNotificationActionTitle": "Wochenduell",
         "WFNotificationActionBody": b.text(b.output(response, "Contents of URL")),

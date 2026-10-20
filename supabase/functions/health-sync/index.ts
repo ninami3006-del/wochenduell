@@ -15,6 +15,7 @@ const UUID_ANY = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i
 const LIMITS = { steps: 200000, active: 20000, eaten: 20000 } as const;
 type Field = keyof typeof LIMITS;
 const FIELDS: Field[] = ['steps', 'active', 'eaten'];
+const SOURCES: Record<Field, string[]> = { steps: ['steps'], active: ['active'], eaten: ['eaten', 'eaten2', 'eaten3'] };
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -124,11 +125,15 @@ Deno.serve(async (req) => {
   const yesterday = berlinDay(-1);
   const days = new Map<string, Record<Field, number | null>>();
   for (const field of FIELDS) {
-    for (const [day, value] of perDay(pick(field), LIMITS[field], today)) {
-      if (day !== today && day !== yesterday) continue;
-      const row = days.get(day) ?? { steps: null, active: null, eaten: null };
-      row[field] = value;
-      days.set(day, row);
+    // Calories eaten come under several candidate fields because the Shortcuts type name is not
+    // documented; the first one that has a value for a day wins.
+    for (const source of SOURCES[field]) {
+      for (const [day, value] of perDay(pick(source), LIMITS[field], today)) {
+        if (day !== today && day !== yesterday) continue;
+        const row = days.get(day) ?? { steps: null, active: null, eaten: null };
+        if (row[field] == null) row[field] = value;
+        days.set(day, row);
+      }
     }
   }
   if (!days.has(today)) days.set(today, { steps: null, active: null, eaten: null });
@@ -151,7 +156,10 @@ Deno.serve(async (req) => {
   const { data: row } = await admin.from('sync_keys').select('user_id').eq('key', key).maybeSingle();
   if (row) {
     const clip = (x: unknown) => (x == null ? null : String(x).slice(0, 400));
-    const raw = { steps: clip(pick('steps')), active: clip(pick('active')), eaten: clip(pick('eaten')), method: req.method };
+    const raw = {
+      steps: clip(pick('steps')), active: clip(pick('active')),
+      eaten: clip(pick('eaten')), eaten2: clip(pick('eaten2')), eaten3: clip(pick('eaten3')), method: req.method,
+    };
     const { error: logError } = await admin.from('health_sync_log').insert({ user_id: row.user_id, raw });
     if (logError) console.error(logError);
   }

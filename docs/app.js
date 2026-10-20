@@ -548,7 +548,7 @@
   }
   // The ready-made Shortcut is the same for everyone; the button hands it the personal key.
   const SHORTCUT_NAME = 'Wochenduell Sync';
-  const SHORTCUT_FILE = 'shortcut/Wochenduell%20Sync.shortcut?v=4';
+  const SHORTCUT_FILE = 'shortcut/Wochenduell%20Sync.shortcut?v=5';
   const runShortcutUrl = () => `shortcuts://run-shortcut?name=${encodeURIComponent(SHORTCUT_NAME)}&input=text&text=${encodeURIComponent(S.sync ? S.sync.key : '')}`;
   const syncButton = (cls) => (S.sync ? `<a class="btn ${cls || ''}" href="${esc(runShortcutUrl())}" data-action="run-sync">${t('sync_now')}</a>` : '');
   function healthCard() {
