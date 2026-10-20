@@ -80,7 +80,7 @@
   const S = {
     user: null, me: null, group: null, members: [],
     stats: new Map(), workouts: [], kudos: new Map(),
-    tab: 'heute', open: null, view: 'loading', authMode: 'login'
+    tab: 'heute', open: null, view: 'loading', authMode: 'login', sync: null
   };
   try { const tb = localStorage.getItem('wd-tab'); if (['heute', 'rangliste', 'feed', 'profil'].includes(tb)) S.tab = tb; } catch (e) {}
 
@@ -125,11 +125,13 @@
 
   async function load() {
     const uid = S.user.id;
-    const [me, mem] = await Promise.all([
+    const [me, mem, sync] = await Promise.all([
       sb.from('profiles').select('id,display_name,calorie_goal,language').eq('id', uid).maybeSingle().then(check),
-      sb.from('group_members').select('group_id,joined_at,groups(id,name,invite_code,created_by)').eq('user_id', uid).order('joined_at', { ascending: true }).limit(1).then(check)
+      sb.from('group_members').select('group_id,joined_at,groups(id,name,invite_code,created_by)').eq('user_id', uid).order('joined_at', { ascending: true }).limit(1).then(check),
+      sb.rpc('get_sync_key').then(check)
     ]);
     S.me = me || { id: uid, display_name: (S.user.email || '').split('@')[0], calorie_goal: 2000, language: lang };
+    S.sync = sync && sync.length ? sync[0] : null;
     if (me && me.language && me.language !== lang) useLang(me.language);
     S.group = mem && mem.length ? mem[0].groups : null;
     if (!S.group) { S.members = []; S.stats = new Map(); S.workouts = []; S.kudos = new Map(); return; }
@@ -313,6 +315,87 @@
       ${solo ? inviteCard() : ''}`;
   }
 
+  /* ---------- the weekly race on a tartan track ---------- */
+  // Stadium seen from above. Runners go anticlockwise from the finish line (end of the
+  // bottom straight). The leader sits just before the finish, everyone else as far back
+  // as their points are behind. Each person runs in their own lane; outer lanes get a
+  // staggered start like on a real track so nobody hides behind anyone else.
+  const TRACK = { cx: 180, cy: 112, half: 70, rOut: 100, width: 62 };
+  const STAGGER = 0.025;
+  const RUNNER_R = 10;
+  function lanePoint(radius, f) {
+    const { cx, cy, half } = TRACK;
+    const arc = Math.PI * radius;
+    let d = (((f % 1) + 1) % 1) * (4 * half + 2 * arc);
+    if (d < arc) { const a = Math.PI / 2 - d / radius; return [cx + half + radius * Math.cos(a), cy + radius * Math.sin(a)]; }
+    d -= arc;
+    if (d < 2 * half) return [cx + half - d, cy - radius];
+    d -= 2 * half;
+    if (d < arc) { const a = -Math.PI / 2 - d / radius; return [cx - half + radius * Math.cos(a), cy + radius * Math.sin(a)]; }
+    d -= arc;
+    return [cx - half + d, cy + radius];
+  }
+  const stadium = (r, attrs) => {
+    const { cx, cy, half } = TRACK;
+    return `<rect x="${cx - half - r}" y="${cy - r}" width="${2 * half + 2 * r}" height="${2 * r}" rx="${r}" ${attrs}/>`;
+  };
+  function raceTrack(r, c) {
+    const { cx, cy, half, rOut, width } = TRACK;
+    const rIn = rOut - width;
+    const lanes = Math.min(8, Math.max(4, r.length));
+    const laneW = width / lanes;
+    const lead = r.length && r[0].total > 0 ? r[0].total : 0;
+    const lines = Array.from({ length: lanes - 1 }, (_, k) => stadium(rIn + (k + 1) * laneW, 'class="lane-line"')).join('');
+    // Place in ranking order; anyone who would cover someone already placed steps back a little.
+    const placed = [];
+    r.forEach((e, idx) => {
+      const lane = idx % lanes;
+      const radius = rIn + (lane + 0.5) * laneW;
+      let f = (lead ? 0.06 + 0.86 * (e.total / lead) : 0) + lane * STAGGER;
+      let [x, y] = lanePoint(radius, f);
+      for (let n = 0; n < 40 && placed.some((p) => Math.hypot(p.x - x, p.y - y) < 2 * RUNNER_R + 2); n++) {
+        f -= 0.006;
+        [x, y] = lanePoint(radius, f);
+      }
+      placed.push({ e, idx, radius, f, x, y });
+    });
+    // draw the leader last so they sit on top
+    const runners = placed.slice().reverse().map(({ e, idx, radius, f, x, y }) => {
+      const label = initials(e.id);
+      return `<g class="runner${isMe(e.id) ? ' me' : ''}${idx === 0 && lead ? ' lead' : ''}" data-radius="${radius.toFixed(2)}" data-f="${f.toFixed(4)}" transform="translate(${x.toFixed(1)} ${y.toFixed(1)})">
+        <circle r="${RUNNER_R}"/><text dy="3" font-size="${label.length > 2 ? 7 : 8.5}">${esc(label)}</text></g>`;
+    }).join('');
+    const aria = r.map((e, i) => `${i + 1}. ${nameOf(e.id)} ${e.total} ${t('points')}`).join(', ');
+    return `<svg class="track" viewBox="0 0 360 224" role="img" aria-label="${esc(t('race_aria', aria))}">
+      ${stadium(rOut, 'class="track-surface"')}
+      ${lines}
+      ${stadium(rIn, 'class="track-infield"')}
+      <text class="track-week" x="${cx}" y="${cy + 9}">${t('kw')} ${c.week}</text>
+      <rect class="track-finish" x="${cx + half - 1.5}" y="${cy + rIn}" width="3" height="${width}"/>
+      <text class="track-finish-label" x="${cx + half - 5}" y="${cy + rIn - 6}">${t('finish')}</text>
+      ${runners}
+    </svg>`;
+  }
+  function animateTrack() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const runners = [...document.querySelectorAll('#view-rangliste .runner')].map((g) => ({
+      g, radius: +g.dataset.radius, f: +g.dataset.f
+    }));
+    if (!runners.length) return;
+    const t0 = performance.now();
+    const dur = 1100;
+    const ease = (x) => 1 - Math.pow(1 - x, 3);
+    function frame(now) {
+      const p = Math.min(1, (now - t0) / dur);
+      runners.forEach((r) => {
+        const [x, y] = lanePoint(r.radius, r.f * ease(p));
+        r.g.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)})`);
+      });
+      if (p < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
   function renderRangliste() {
     const c = ctx();
     const r = ranking(c.past);
@@ -320,21 +403,11 @@
     const second = r[1];
     const max = (top && top.total) || 1;
 
-    let hero;
-    if (top && top.total > 0) {
-      const meta = second
-        ? t('bib_meta', top.total, top.total - second.total, isMe(second.id) ? t('you_dative') : esc(nameOf(second.id)))
-        : t('bib_meta_solo', top.total);
-      hero = `<div class="bib-stage"><div class="bib">
-        <i class="hole tl"></i><i class="hole tr"></i><i class="hole bl"></i><i class="hole br"></i>
-        <div class="bib-strip">Wochenduell · ${t('kw')} ${c.week}</div>
-        <div class="bib-num">1</div>
-        <div class="bib-name">${isMe(top.id) ? t('you_bib') : esc(nameOf(top.id))}</div>
-        <div class="bib-meta">${meta}</div>
-      </div></div>`;
-    } else {
-      hero = `<section class="card"><p class="empty">${t('no_points_yet')}</p></section>`;
-    }
+    const line = top && top.total > 0
+      ? t('race_line', isMe(top.id), esc(nameOf(top.id)), top.total, second ? top.total - second.total : 0,
+          second ? (isMe(second.id) ? t('you_dative') : esc(nameOf(second.id))) : '')
+      : t('race_start');
+    const hero = `<section class="card race">${raceTrack(r, c)}<p class="race-line">${line}</p></section>`;
 
     const past = [1, 2, 3, 4].map((w) => {
       const st = addDays(c.start, -7 * w);
@@ -451,13 +524,73 @@
         <p class="hint">${t('invite_hint')}</p>
         <div class="members">${S.members.map((m) => `<div class="member">${av(m.id)}<span>${esc(m.display_name)}${isMe(m.id) ? ` (${t('you')})` : ''}</span></div>`).join('')}</div>
       </section>
+      ${healthCard()}
       <section class="card">
-        <h2 class="card-title">${t('connections')}</h2>
-        <div class="conn-head"><span class="conn-icon">${I.heart}</span><div class="conn-name"><b>Apple Health</b><span class="muted">${t('health_desc')}</span></div><span class="status off">${t('soon')}</span></div>
-        <div class="conn-head"><span class="conn-icon">${I.band}</span><div class="conn-name"><b>Whoop</b><span class="muted">${t('whoop_desc')}</span></div><span class="status off">${t('later')}</span></div>
-        <div class="conn-head"><span class="conn-icon">${I.food}</span><div class="conn-name"><b>${lang === 'de' ? 'Kalorien-App' : 'Calorie app'}</b><span class="muted">${t('foodapp_desc')}</span></div></div>
+        <div class="conn-head"><span class="conn-icon">${I.food}</span><div class="conn-name"><b>${t('food_title')}</b><span class="muted">${t('food_desc')}</span></div><span class="status ${healthConnected() ? 'on' : 'off'}">${t('via_health')}</span></div>
+        <p class="hint">${t('food_how')}</p>
+      </section>
+      <section class="card">
+        <div class="conn-head"><span class="conn-icon">${I.band}</span><div class="conn-name"><b>Whoop</b><span class="muted">${t('whoop_desc')}</span></div><span class="status off">${t('soon')}</span></div>
       </section>
       <button class="btn ghost block" data-action="logout">${t('logout')}</button>`;
+  }
+
+  /* ---------- Apple Health (iPhone Shortcut) ---------- */
+  const syncUrl = () => (S.sync ? `${cfg.url}/functions/v1/health-sync?key=${S.sync.key}` : '');
+  const healthConnected = () => !!(S.sync && S.sync.last_used_at);
+  function whenText(iso) {
+    const d = new Date(iso);
+    const time = d.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' });
+    if (keyOf(d) === keyOf(new Date())) return t('today_at', time);
+    return d.toLocaleDateString(locale(), { day: 'numeric', month: 'short' }) + ' ' + time;
+  }
+  function healthCard() {
+    const on = healthConnected();
+    return `<section class="card">
+      <div class="conn-head"><span class="conn-icon">${I.heart}</span><div class="conn-name"><b>Apple Health</b><span class="muted">${t('health_desc')}</span></div>
+        <span class="status ${on ? 'on' : 'off'}">${on ? t('connected') : t('not_set_up')}</span></div>
+      ${on ? `<p class="hint">${t('last_sync', esc(whenText(S.sync.last_used_at)))}</p>` : ''}
+      <p class="hint">${t('health_link_label')}</p>
+      <div class="sync-link" id="sync-link">${esc(syncUrl())}</div>
+      <div class="actions">
+        <button class="btn ghost" data-action="copy-sync">${t('copy_link')}</button>
+        <button class="btn" data-action="open-health">${t('guide')}</button>
+      </div>
+      <button class="link-btn" data-action="reset-sync">${t('new_link')}</button>
+    </section>`;
+  }
+  function renderHealthGuide() {
+    $('health-body').innerHTML = `
+      <div class="grip"></div>
+      <div><h2 id="ht">${t('guide_title')}</h2><p class="hint" style="margin-top:6px">${t('guide_lede')}</p></div>
+      <ol class="guide">${t('guide_steps').map(([title, text]) => `<li><b>${title}</b><span>${text}</span></li>`).join('')}</ol>
+      <p class="hint">${t('guide_note')}</p>
+      <div class="actions">
+        <button type="button" class="btn ghost" data-action="copy-sync">${t('copy_link')}</button>
+        <button type="button" class="btn" data-action="close-sheet">${t('got_it')}</button>
+      </div>`;
+  }
+  async function copySync() {
+    const url = syncUrl();
+    if (!url) return;
+    try { await navigator.clipboard.writeText(url); toast(t('link_copied')); } catch (e) {
+      const el = $('sync-link');
+      if (!el) return;
+      const r = document.createRange();
+      r.selectNodeContents(el);
+      const s = getSelection();
+      s.removeAllRanges();
+      s.addRange(r);
+      toast(t('link_selected'));
+    }
+  }
+  async function resetSync() {
+    if (!window.confirm(t('confirm_new_link'))) return;
+    const { data, error } = await sb.rpc('reset_sync_key');
+    if (error) { console.error(error); toast(t('err_generic')); return; }
+    S.sync = { key: data, last_used_at: null };
+    render();
+    toast(t('new_link_done'));
   }
 
   function renderRules() {
@@ -509,6 +642,7 @@
     try { localStorage.setItem('wd-tab', tab); } catch (e) {}
     show('main');
     window.scrollTo(0, 0);
+    if (tab === 'rangliste') animateTrack();
   }
 
   async function enter() {
@@ -565,6 +699,7 @@
     opener = from || null;
     if (id === 'sheet-workout') updatePreview();
     if (id === 'sheet-rules') renderRules();
+    if (id === 'sheet-health') renderHealthGuide();
     if (id === 'sheet-values') {
       const s = statOf(S.user.id, ctx().todayKey) || {};
       $('v-steps').value = s.steps == null ? '' : s.steps;
@@ -672,6 +807,9 @@
     else if (act === 'open-rules') openSheet('sheet-rules', a);
     else if (act === 'close-sheet') closeSheets();
     else if (act === 'copy-code') copyCode();
+    else if (act === 'copy-sync') copySync();
+    else if (act === 'open-health') openSheet('sheet-health', a);
+    else if (act === 'reset-sync') resetSync();
     else if (act === 'kudos') toggleKudos(a);
     else if (act === 'delete-workout') deleteWorkout(a.dataset.id);
     else if (act === 'toggle-row') {

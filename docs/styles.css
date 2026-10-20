@@ -243,3 +243,29 @@ img{max-width:100%}
 .unit-row .input{flex:1;font-variant-numeric:tabular-nums}
 .loading{display:grid;place-items:center;min-height:50vh}
 @media (max-width:360px){.auth-hero .display{font-size:44px}.lang-switch{min-width:0;width:100%}}
+
+/* ---------- Apple Health link and setup guide ---------- */
+.sync-link{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.45;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;word-break:break-all;color:var(--muted);-webkit-user-select:all;user-select:all}
+.guide{margin:0;padding:0;list-style:none;counter-reset:g;display:flex;flex-direction:column;gap:16px}
+.guide li{counter-increment:g;display:grid;grid-template-columns:30px minmax(0,1fr);gap:3px 12px}
+.guide li::before{content:counter(g);grid-row:span 2;width:28px;height:28px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-family:var(--f-display);font-weight:800;font-size:16px;display:grid;place-items:center}
+.guide li b{font-weight:700}
+.guide li span{font-size:14px;color:var(--muted)}
+
+/* ---------- weekly race on the tartan track (ranking) ---------- */
+:root{--tartan:#9C4F33;--infield:#5E6B3A;--chalk:#EEE5D1}
+.race{gap:10px;padding:14px}
+.track{width:100%;height:auto;display:block}
+.track-surface{fill:var(--tartan)}
+.lane-line{fill:none;stroke:var(--chalk);stroke-opacity:.45;stroke-width:1.2}
+.track-infield{fill:var(--infield)}
+.track-week{fill:var(--chalk);fill-opacity:.55;font-family:var(--f-display);font-weight:800;font-size:26px;letter-spacing:.06em;text-anchor:middle}
+.track-finish{fill:var(--chalk)}
+.track-finish-label{fill:var(--chalk);font-family:var(--f-body);font-weight:700;font-size:10px;text-anchor:end;text-transform:uppercase;letter-spacing:.08em}
+.runner circle{fill:var(--bib-paper);stroke:var(--bg);stroke-width:1.5}
+.runner text{fill:var(--bib-ink);font-family:var(--f-body);font-weight:800;text-anchor:middle}
+.runner.me circle{fill:var(--accent)}
+.runner.me text{fill:var(--accent-ink)}
+.runner.lead circle{stroke:var(--signal);stroke-width:2.5}
+.race-line{margin:0;color:var(--muted);font-size:14.5px}
+.race-line strong{color:var(--ink)}

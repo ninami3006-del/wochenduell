@@ -11,3 +11,7 @@ minimum_password_length = 8
 enable_signup = true
 # The free built-in mail service only delivers to the project team, so sign-ups go straight in.
 enable_confirmations = false
+
+# Called by the iPhone Shortcut without a login; the personal sync key is checked inside.
+[functions.health-sync]
+verify_jwt = false

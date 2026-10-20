@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Figtree:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="styles.css?v=3">
+<link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
 
@@ -99,6 +99,10 @@
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="rt" id="rules-body"></div>
 </div>
 
+<div class="backdrop" id="sheet-health" data-action="backdrop" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="ht" id="health-body"></div>
+</div>
+
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
 <div class="install" id="install" hidden>
@@ -110,7 +114,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <script src="config.js?v=1"></script>
-<script src="i18n.js?v=1"></script>
-<script src="app.js?v=1"></script>
+<script src="i18n.js?v=2"></script>
+<script src="app.js?v=2"></script>
 </body>
 </html>
