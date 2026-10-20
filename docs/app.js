@@ -289,9 +289,10 @@
             <span class="bar"><i style="width:${(tp[m.k] / CAP[m.k]) * 100}%"></i></span>
           </div>`).join('')}
         </div>
+        ${syncButton('block')}
         <div class="actions">
           <button class="btn ghost" data-action="open-values">${t('enter_values')}</button>
-          <button class="btn" data-action="open-workout">${t('add_workout')}</button>
+          <button class="btn ghost" data-action="open-workout">${t('add_workout')}</button>
         </div>
       </section>
       ${leftTotal > 0 ? `<section class="card">
@@ -545,17 +546,21 @@
     if (keyOf(d) === keyOf(new Date())) return t('today_at', time);
     return d.toLocaleDateString(locale(), { day: 'numeric', month: 'short' }) + ' ' + time;
   }
+  // The ready-made Shortcut is the same for everyone; the button hands it the personal link.
+  const SHORTCUT_NAME = 'Wochenduell Sync';
+  const SHORTCUT_FILE = 'shortcut/Wochenduell%20Sync.shortcut';
+  const runShortcutUrl = () => `shortcuts://run-shortcut?name=${encodeURIComponent(SHORTCUT_NAME)}&input=text&text=${encodeURIComponent(syncUrl())}`;
+  const syncButton = (cls) => (S.sync ? `<a class="btn ${cls || ''}" href="${esc(runShortcutUrl())}" data-action="run-sync">${t('sync_now')}</a>` : '');
   function healthCard() {
     const on = healthConnected();
     return `<section class="card">
       <div class="conn-head"><span class="conn-icon">${I.heart}</span><div class="conn-name"><b>Apple Health</b><span class="muted">${t('health_desc')}</span></div>
         <span class="status ${on ? 'on' : 'off'}">${on ? t('connected') : t('not_set_up')}</span></div>
       ${on ? `<p class="hint">${t('last_sync', esc(whenText(S.sync.last_used_at)))}</p>` : ''}
-      <p class="hint">${t('health_link_label')}</p>
-      <div class="sync-link" id="sync-link">${esc(syncUrl())}</div>
+      ${syncButton('block')}
       <div class="actions">
-        <button class="btn ghost" data-action="copy-sync">${t('copy_link')}</button>
-        <button class="btn" data-action="open-health">${t('guide')}</button>
+        <a class="btn ghost" href="${SHORTCUT_FILE}">${t('add_shortcut')}</a>
+        <button class="btn ghost" data-action="open-health">${t('guide')}</button>
       </div>
       <button class="link-btn" data-action="reset-sync">${t('new_link')}</button>
     </section>`;
@@ -567,9 +572,18 @@
       <ol class="guide">${t('guide_steps').map(([title, text]) => `<li><b>${title}</b><span>${text}</span></li>`).join('')}</ol>
       <p class="hint">${t('guide_note')}</p>
       <div class="actions">
-        <button type="button" class="btn ghost" data-action="copy-sync">${t('copy_link')}</button>
+        <a class="btn ghost" href="${SHORTCUT_FILE}">${t('add_shortcut')}</a>
         <button type="button" class="btn" data-action="close-sheet">${t('got_it')}</button>
       </div>`;
+  }
+  // Coming back from the Shortcut: reload and say whether new values arrived.
+  async function afterSync() {
+    const before = S.syncBefore;
+    const arrived = () => !!(S.sync && S.sync.last_used_at && S.sync.last_used_at !== before);
+    await refresh();
+    if (!arrived()) { await new Promise((r) => setTimeout(r, 3000)); await refresh(); }
+    S.syncStarted = 0;
+    toast(arrived() ? t('synced_ok') : t('synced_none'));
   }
   async function copySync() {
     const url = syncUrl();
@@ -809,6 +823,7 @@
     else if (act === 'close-sheet') closeSheets();
     else if (act === 'copy-code') copyCode();
     else if (act === 'copy-sync') copySync();
+    else if (act === 'run-sync') { S.syncStarted = Date.now(); S.syncBefore = S.sync ? S.sync.last_used_at : null; }
     else if (act === 'open-health') openSheet('sheet-health', a);
     else if (act === 'reset-sync') resetSync();
     else if (act === 'kudos') toggleKudos(a);
@@ -905,7 +920,11 @@
   $('dur').addEventListener('input', updatePreview);
   document.addEventListener('change', (e) => { if (e.target.name === 'sport') updatePreview(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSheets(); });
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.view === 'main') refresh(); });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible' || S.view !== 'main') return;
+    if (S.syncStarted && Date.now() - S.syncStarted < 10 * 60 * 1000) afterSync();
+    else refresh();
+  });
 
   /* ---------- install hint (iPhone Safari, not yet on the home screen) ---------- */
   (function installHint() {
