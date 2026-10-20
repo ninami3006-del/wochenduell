@@ -113,8 +113,13 @@ Deno.serve(async (req) => {
     console.error(error);
     return asText ? textReply(TEXT.error) : json({ ok: false, error: 'server_error' }, 500);
   }
+  const { data: row } = await admin.from('sync_keys').select('user_id').eq('key', key).maybeSingle();
+  if (row) {
+    const raw = { steps: pick('steps') ?? null, active: pick('active') ?? null, eaten: pick('eaten') ?? null, method: req.method };
+    const { error: logError } = await admin.from('health_sync_log').insert({ user_id: row.user_id, raw });
+    if (logError) console.error(logError);
+  }
   if (asText) {
-    const { data: row } = await admin.from('sync_keys').select('user_id').eq('key', key).maybeSingle();
     const { data: prof } = row ? await admin.from('profiles').select('language').eq('id', row.user_id).maybeSingle() : { data: null };
     return textReply(summary(prof?.language ?? 'de', steps, active, eaten));
   }
