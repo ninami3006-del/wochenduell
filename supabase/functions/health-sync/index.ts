@@ -1,5 +1,5 @@
 // Receives today's Apple Health values from the iPhone Shortcut.
-// URL: /functions/v1/health-sync?key=<personal sync key>
+// URL: /functions/v1/health-sync?key=<personal sync key>[&format=text]
 // Body (JSON, from the Shortcut): { "steps": 8432, "active": 486.2, "eaten": 1640 }
 // Query parameters with the same names work too. Deployed with --no-verify-jwt:
 // the personal key is the only credential.
@@ -9,7 +9,7 @@ const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_ANY = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 const LIMITS = { steps: 200000, active: 20000, eaten: 20000 };
 
 function json(body: unknown, status = 200) {
@@ -51,6 +51,25 @@ function berlinDay(offsetDays = 0): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
 }
 
+// Texts for the Shortcut's notification (?format=text). The person's language is not known
+// before the key is checked, so those two messages are bilingual.
+const TEXT = {
+  noKey: 'Wochenduell: Bitte starte das über den Button „Aus Apple Health übernehmen“ in der App. / Please use the “Import from Apple Health” button in the app.',
+  badKey: 'Wochenduell: Dieser Schlüssel gilt nicht mehr. Starte es bitte über den Button in der App. / This key is no longer valid. Please use the button in the app.',
+  error: 'Wochenduell: Gerade gibt es ein Problem. Versuch es gleich nochmal. / Something went wrong. Please try again in a moment.',
+};
+function summary(lang: string, steps: number | null, active: number | null, eaten: number | null) {
+  const de = lang !== 'en';
+  const f = (n: number) => n.toLocaleString(de ? 'de-DE' : 'en-GB');
+  const parts = [
+    steps != null ? `${f(steps)} ${de ? 'Schritte' : 'steps'}` : null,
+    active != null ? `${f(active)} kcal ${de ? 'aktiv' : 'active'}` : null,
+    eaten != null ? `${f(eaten)} kcal ${de ? 'gegessen' : 'eaten'}` : null,
+  ].filter(Boolean);
+  if (!parts.length) return de ? 'Wochenduell: In Apple Health sind für heute noch keine Werte.' : 'Wochenduell: Apple Health has no values for today yet.';
+  return (de ? 'Übernommen: ' : 'Imported: ') + parts.join(' · ');
+}
+
 Deno.serve(async (req) => {
   if (req.method !== 'GET' && req.method !== 'POST') return json({ ok: false, error: 'method_not_allowed' }, 405);
 
@@ -68,9 +87,14 @@ Deno.serve(async (req) => {
     }
   }
   const pick = (name: string) => (body[name] ?? url.searchParams.get(name)) as unknown;
+  // The Shortcut asks for a short plain-text answer it can show as a notification.
+  const asText = String(pick('format') ?? '') === 'text';
+  const textReply = (msg: string) => new Response(msg, { status: 200, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
 
-  const key = String(pick('key') ?? '').trim();
-  if (!UUID.test(key)) return json({ ok: false, error: 'missing_or_invalid_key' }, 400);
+  // Accept the bare key or anything containing it (older app versions sent the whole link).
+  const keyMatch = String(pick('key') ?? '').match(UUID_ANY);
+  if (!keyMatch) return asText ? textReply(TEXT.noKey) : json({ ok: false, error: 'missing_or_invalid_key' }, 400);
+  const key = keyMatch[0];
 
   // Today in German time; a Shortcut may also send yesterday's values with "day".
   let day = berlinDay();
@@ -85,9 +109,14 @@ Deno.serve(async (req) => {
     p_key: key, p_day: day, p_steps: steps, p_active: active, p_eaten: eaten,
   });
   if (error) {
-    if (String(error.message).includes('invalid_key')) return json({ ok: false, error: 'unknown_key' }, 403);
+    if (String(error.message).includes('invalid_key')) return asText ? textReply(TEXT.badKey) : json({ ok: false, error: 'unknown_key' }, 403);
     console.error(error);
-    return json({ ok: false, error: 'server_error' }, 500);
+    return asText ? textReply(TEXT.error) : json({ ok: false, error: 'server_error' }, 500);
+  }
+  if (asText) {
+    const { data: row } = await admin.from('sync_keys').select('user_id').eq('key', key).maybeSingle();
+    const { data: prof } = row ? await admin.from('profiles').select('language').eq('id', row.user_id).maybeSingle() : { data: null };
+    return textReply(summary(prof?.language ?? 'de', steps, active, eaten));
   }
   return json({ ok: true, name: data, day, saved: { steps, active, eaten } });
 });

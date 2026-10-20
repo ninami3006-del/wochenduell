@@ -546,10 +546,10 @@
     if (keyOf(d) === keyOf(new Date())) return t('today_at', time);
     return d.toLocaleDateString(locale(), { day: 'numeric', month: 'short' }) + ' ' + time;
   }
-  // The ready-made Shortcut is the same for everyone; the button hands it the personal link.
+  // The ready-made Shortcut is the same for everyone; the button hands it the personal key.
   const SHORTCUT_NAME = 'Wochenduell Sync';
-  const SHORTCUT_FILE = 'shortcut/Wochenduell%20Sync.shortcut';
-  const runShortcutUrl = () => `shortcuts://run-shortcut?name=${encodeURIComponent(SHORTCUT_NAME)}&input=text&text=${encodeURIComponent(syncUrl())}`;
+  const SHORTCUT_FILE = 'shortcut/Wochenduell%20Sync.shortcut?v=2';
+  const runShortcutUrl = () => `shortcuts://run-shortcut?name=${encodeURIComponent(SHORTCUT_NAME)}&input=text&text=${encodeURIComponent(S.sync ? S.sync.key : '')}`;
   const syncButton = (cls) => (S.sync ? `<a class="btn ${cls || ''}" href="${esc(runShortcutUrl())}" data-action="run-sync">${t('sync_now')}</a>` : '');
   function healthCard() {
     const on = healthConnected();

@@ -1,9 +1,10 @@
 """Builds the "Wochenduell Sync" iOS Shortcut as an unsigned shortcut file.
 
 The Shortcut is the same for everyone. The app starts it with
-  shortcuts://run-shortcut?name=Wochenduell%20Sync&input=text&text=<personal sync URL>
-and the Shortcut appends today's values:
-  <personal sync URL>&steps=<n>&active=<n>&eaten=<n>
+  shortcuts://run-shortcut?name=Wochenduell%20Sync&input=text&text=<personal sync key>
+and the Shortcut calls
+  <health-sync>?format=text&key=<key>&steps=<n>&active=<n>&eaten=<n>
+then shows the server's one-line answer as a notification.
 
 Action format copied from a Shortcut exported by iOS (Find Health Samples grouped by day).
 Sign afterwards on a Mac:  shortcuts sign --mode anyone -i <unsigned> -o "Wochenduell Sync.shortcut"
@@ -13,6 +14,7 @@ import sys
 import uuid
 
 OBJ = "￼"  # placeholder character for a variable inside text
+BASE_URL = "https://pkkfxhxizhezovjgfbne.supabase.co/functions/v1/health-sync"
 
 
 def uid():
@@ -88,22 +90,37 @@ def build():
         actions += [find_today(hk_type, f), sample_value(v), round_whole(r)]
         rounded[key] = r
 
-    url = token_string([
-        {"Type": "ExtensionInput"},
-        "&steps=", output(rounded["steps"], "Rounded Number"),
-        "&active=", output(rounded["active"], "Rounded Number"),
-        "&eaten=", output(rounded["eaten"], "Rounded Number"),
-    ])
+    # Build the address as plain text first: putting variables straight into the URL field
+    # made iOS treat it as formatted text ("Keine Konvertierung von Formatierter Text in URL").
+    # The base address is fixed, so it stays a valid URL even when started without input.
+    text_uuid, request_uuid = uid(), uid()
+    actions.append({
+        "WFWorkflowActionIdentifier": "is.workflow.actions.gettext",
+        "WFWorkflowActionParameters": {
+            "UUID": text_uuid,
+            "WFTextActionText": token_string([
+                BASE_URL + "?format=text&key=", {"Type": "ExtensionInput"},
+                "&steps=", output(rounded["steps"], "Rounded Number"),
+                "&active=", output(rounded["active"], "Rounded Number"),
+                "&eaten=", output(rounded["eaten"], "Rounded Number"),
+            ]),
+        },
+    })
     actions.append({
         "WFWorkflowActionIdentifier": "is.workflow.actions.downloadurl",
-        "WFWorkflowActionParameters": {"UUID": uid(), "WFURL": url, "WFHTTPMethod": "GET"},
+        "WFWorkflowActionParameters": {
+            "UUID": request_uuid,
+            "WFURL": token_string([output(text_uuid, "Text")]),
+            "WFHTTPMethod": "GET",
+        },
     })
+    # The server answers with one readable sentence, e.g. "Übernommen: 8.432 Schritte · …"
     actions.append({
         "WFWorkflowActionIdentifier": "is.workflow.actions.notification",
         "WFWorkflowActionParameters": {
             "UUID": uid(),
             "WFNotificationActionTitle": "Wochenduell",
-            "WFNotificationActionBody": "Werte aus Apple Health übernommen. / Values sent from Apple Health.",
+            "WFNotificationActionBody": token_string([output(request_uuid, "Contents of URL")]),
             "WFNotificationActionSound": False,
         },
     })
