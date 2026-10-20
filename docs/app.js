@@ -530,7 +530,8 @@
         <p class="hint">${t('food_how')}</p>
       </section>
       <section class="card">
-        <div class="conn-head"><span class="conn-icon">${I.band}</span><div class="conn-name"><b>Whoop</b><span class="muted">${t('whoop_desc')}</span></div><span class="status off">${t('soon')}</span></div>
+        <div class="conn-head"><span class="conn-icon">${I.band}</span><div class="conn-name"><b>Whoop</b><span class="muted">${t('whoop_desc')}</span></div><span class="status ${healthConnected() ? 'on' : 'off'}">${t('via_health')}</span></div>
+        <p class="hint">${t('whoop_how')}</p>
       </section>
       <button class="btn ghost block" data-action="logout">${t('logout')}</button>`;
   }
