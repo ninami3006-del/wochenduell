@@ -25,13 +25,11 @@ import uuid
 OBJ = "￼"  # placeholder character marking where a variable sits inside text
 BASE_URL = "https://pkkfxhxizhezovjgfbne.supabase.co/functions/v1/health-sync"
 DAYS = "3"
-# (JSON field, Shortcuts type name, unit), confirmed on a phone; each is sent right after reading.
-TYPES = (("steps", "Steps", "count"), ("active", "Active Calories", "kcal"))
-# The Shortcuts name for calories eaten is not documented ("Dietary Calories" came back empty on
-# the phone while Health had Yazio data). An unknown name only yields an empty value, no alert,
-# so several candidates are read and the server keeps the first one with data.
-EATEN_CANDIDATES = (("eaten", "Dietary Energy", "kcal"), ("eaten2", "Dietary Energy Consumed", "kcal"),
-                    ("eaten3", "Calories Consumed", "kcal"))
+# (JSON field, Shortcuts type name, unit); each is sent right after reading. The names are the
+# Shortcuts app's own ("Active Calories", "Dietary Calories"), taken from the type list in
+# WorkflowKit, not the Health app's ("Active Energy", "Dietary Energy"), which come back empty.
+# A type the user has not allowed in Settings > Health > Shortcuts also comes back empty, no alert.
+TYPES = (("steps", "Steps", "count"), ("active", "Active Calories", "kcal"), ("eaten", "Dietary Calories", "kcal"))
 
 REPEAT_ITEM = {"Type": "Variable", "VariableName": "Repeat Item"}
 VALUE_OF_ITEM = dict(REPEAT_ITEM, Aggrandizements=[{"Type": "WFPropertyVariableAggrandizement", "PropertyName": "Value"}])
@@ -129,9 +127,6 @@ def build():
         lines = b.daily_lines(b.health_samples(type_name, unit))
         sent.append((key, lines))
         response = b.post(sent)
-    for key, type_name, unit in EATEN_CANDIDATES:
-        sent.append((key, b.daily_lines(b.health_samples(type_name, unit))))
-    response = b.post(sent)
     b.add("is.workflow.actions.notification", {
         "WFNotificationActionTitle": "Wochenduell",
         "WFNotificationActionBody": b.text(b.output(response, "Contents of URL")),
