@@ -178,13 +178,14 @@
       synced_ok: 'Werte aus Apple Health übernommen',
       synced_none: 'Noch keine neuen Werte angekommen. Hast du den Kurzbefehl schon hinzugefügt?',
       guide_title: 'Apple Health verbinden',
-      guide_lede: 'Einmal einrichten, dann reicht ein Tipp.',
+      guide_lede: 'Einmal einrichten, danach reicht ein Tipp.',
       guide_steps: [
-        ['Kurzbefehl hinzufügen', 'Tippe auf „Kurzbefehl hinzufügen“ und in der Kurzbefehle-App noch einmal auf „Kurzbefehl hinzufügen“. Fragt Safari, ob die Datei geladen werden soll, tippe auf „Laden“ und öffne sie. Das machst du nur einmal.'],
-        ['Werte holen', 'Tippe auf „Aus Apple Health übernehmen“. Beim ersten Mal fragt dein iPhone, ob der Kurzbefehl Health lesen darf. Tippe auf „Erlauben“ und schalte Schritte, Aktive Energie und Nahrungsenergie ein.'],
-        ['Zurück zur App', 'Tippe oben links auf „◀ Wochenduell“. Deine Werte sind dann da.']
+        ['Alten Kurzbefehl löschen', 'Falls du „Wochenduell Sync“ schon einmal hinzugefügt hast: Halte ihn in der Kurzbefehle-App gedrückt und tippe auf „Löschen“. Sonst entsteht eine zweite Kopie.'],
+        ['Kurzbefehl hinzufügen', 'Tippe unten auf „Kurzbefehl hinzufügen“ und in der Kurzbefehle-App noch einmal auf „Kurzbefehl hinzufügen“. Fragt Safari, ob die Datei geladen werden soll, tippe auf „Laden“ und öffne sie.'],
+        ['Health-Zugriff erlauben', 'Tippe auf „Aus Apple Health übernehmen“. Fragt dein iPhone nach Zugriff auf Health, tippe auf „Alle aktivieren“ und „Erlauben“. Erscheint stattdessen „Keine Messungen gefunden“, tippe dort auf „„Health“ öffnen“, dann auf „Alle aktivieren“, und starte es noch einmal.'],
+        ['Fertig', 'Oben erscheint „Übernommen: …“. Tippe oben links auf „◀ Wochenduell“, deine Werte sind da. Ab jetzt reicht jedes Mal ein Tipp auf „Aus Apple Health übernehmen“.']
       ],
-      guide_note: 'Wenn Yazio und Whoop mit Apple Health verbunden sind, kommen ihre Kalorien automatisch mit. Workouts trägst du vorerst selbst ein.',
+      guide_note: 'Hast du heute noch nichts gegessen eingetragen, meldet der Kurzbefehl am Ende „Keine Messungen gefunden“ für die Nahrungsenergie. Tippe einfach auf „OK“, Schritte und aktive Kalorien sind dann schon übernommen. Starte den Kurzbefehl immer über den Button hier, nicht mit ▶︎ in der Kurzbefehle-App.',
       finish: 'Ziel',
       race_line: (me, name, pts, lead, who) => `${me ? '<strong>Du</strong> führst' : `<strong>${name}</strong> führt`} mit ${pts} Punkten${who ? ` · ${lead} vor ${who}` : ''}.`,
       race_start: 'Noch keine Punkte, alle stehen am Start.',
@@ -373,11 +374,12 @@
       guide_title: 'Connect Apple Health',
       guide_lede: 'Set it up once, then one tap is enough.',
       guide_steps: [
-        ['Add the Shortcut', 'Tap “Add Shortcut”, then “Add Shortcut” again in the Shortcuts app. If Safari asks to download the file, tap “Download” and open it. You only do this once.'],
-        ['Import your values', 'Tap “Import from Apple Health”. The first time, your iPhone asks whether the Shortcut may read Health. Tap “Allow” and turn on Steps, Active Energy and Dietary Energy.'],
-        ['Back to the app', 'Tap “◀ Wochenduell” at the top left. Your values are there.']
+        ['Delete the old Shortcut', 'If you added “Wochenduell Sync” before, press and hold it in the Shortcuts app and tap “Delete”. Otherwise you end up with a second copy.'],
+        ['Add the Shortcut', 'Tap “Add Shortcut” below, then “Add Shortcut” again in the Shortcuts app. If Safari asks to download the file, tap “Download” and open it.'],
+        ['Allow Health access', 'Tap “Import from Apple Health”. If your iPhone asks for Health access, tap “Turn On All” and “Allow”. If you see “No samples found” instead, tap “Open Health” there, then “Turn On All”, and try again.'],
+        ['Done', '“Imported: …” appears at the top. Tap “◀ Wochenduell” at the top left and your values are there. From now on one tap on “Import from Apple Health” is enough.']
       ],
-      guide_note: 'If Yazio and Whoop are connected to Apple Health, their calories come along automatically. Log workouts yourself for now.',
+      guide_note: 'If you have not logged any food today, the Shortcut ends with “No samples found” for Dietary Energy. Just tap “OK”: steps and active calories are already saved. Always start the Shortcut with the button here, not with ▶︎ in the Shortcuts app.',
       finish: 'Finish',
       race_line: (me, name, pts, lead, who) => `${me ? '<strong>You</strong> lead' : `<strong>${name}</strong> leads`} with ${pts} points${who ? ` · ${lead} ahead of ${who}` : ''}.`,
       race_start: 'No points yet, everyone is at the start.',

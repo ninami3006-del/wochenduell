@@ -85,35 +85,36 @@ def output(action_uuid, name):
 def build():
     actions = []
     rounded = {}
+    # Each value is sent as soon as it has been read. If Health has nothing for a later type
+    # (e.g. no food logged yet today), "Find Health Samples" stops the Shortcut with an error,
+    # but everything read before that is already saved. Order: most to least likely to exist.
+    # The address is built as plain text first: variables straight in the URL field made iOS
+    # treat it as formatted text ("Keine Konvertierung von Formatierter Text in URL"). The base
+    # address is fixed, so it stays a valid URL even when started without input.
+    request_uuid = None
+    sent = []
     for key, hk_type in (("steps", "Steps"), ("active", "Active Energy"), ("eaten", "Dietary Energy")):
         f, v, r = uid(), uid(), uid()
         actions += [find_today(hk_type, f), sample_value(v), round_whole(r)]
         rounded[key] = r
+        sent.append(key)
 
-    # Build the address as plain text first: putting variables straight into the URL field
-    # made iOS treat it as formatted text ("Keine Konvertierung von Formatierter Text in URL").
-    # The base address is fixed, so it stays a valid URL even when started without input.
-    text_uuid, request_uuid = uid(), uid()
-    actions.append({
-        "WFWorkflowActionIdentifier": "is.workflow.actions.gettext",
-        "WFWorkflowActionParameters": {
-            "UUID": text_uuid,
-            "WFTextActionText": token_string([
-                BASE_URL + "?format=text&key=", {"Type": "ExtensionInput"},
-                "&steps=", output(rounded["steps"], "Rounded Number"),
-                "&active=", output(rounded["active"], "Rounded Number"),
-                "&eaten=", output(rounded["eaten"], "Rounded Number"),
-            ]),
-        },
-    })
-    actions.append({
-        "WFWorkflowActionIdentifier": "is.workflow.actions.downloadurl",
-        "WFWorkflowActionParameters": {
-            "UUID": request_uuid,
-            "WFURL": token_string([output(text_uuid, "Text")]),
-            "WFHTTPMethod": "GET",
-        },
-    })
+        parts = [BASE_URL + "?format=text&key=", {"Type": "ExtensionInput"}]
+        for k in sent:
+            parts += ["&%s=" % k, output(rounded[k], "Rounded Number")]
+        text_uuid, request_uuid = uid(), uid()
+        actions.append({
+            "WFWorkflowActionIdentifier": "is.workflow.actions.gettext",
+            "WFWorkflowActionParameters": {"UUID": text_uuid, "WFTextActionText": token_string(parts)},
+        })
+        actions.append({
+            "WFWorkflowActionIdentifier": "is.workflow.actions.downloadurl",
+            "WFWorkflowActionParameters": {
+                "UUID": request_uuid,
+                "WFURL": token_string([output(text_uuid, "Text")]),
+                "WFHTTPMethod": "GET",
+            },
+        })
     # The server answers with one readable sentence, e.g. "Übernommen: 8.432 Schritte · …"
     actions.append({
         "WFWorkflowActionIdentifier": "is.workflow.actions.notification",
